@@ -12,3 +12,9 @@ android/key.properties
 *.jks
 *.keystore
 ios/Pods/
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+ios/Pods/
