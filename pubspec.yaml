@@ -1,0 +1,84 @@
+name: agrolink
+description: "AgroLink — marketplace agropecuario para México. App Flutter."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Traducciones de Material (date pickers, diálogos) al español. Viene con el SDK.
+  flutter_localizations:
+    sdk: flutter
+  # Manejo de estado + inyección de dependencias (repositorios mock -> API real sin tocar la UI).
+  flutter_riverpod: ^3.0.0
+  # Navegación declarativa con URLs (necesario para Flutter Web y deep links).
+  go_router: ^16.0.0
+  # Cliente HTTP para la API real (Fase 4). Se eligió sobre Dio: no necesitamos
+  # interceptores/cancelación avanzada todavía y http ya cubre JSON + multipart
+  # (subir fotos, Fase 5) sin traer una dependencia más pesada de lo necesario.
+  http: ^1.2.0
+  # Guarda el token de sesión (Sanctum) cifrado con Android Keystore/iOS Keychain —
+  # nunca en SharedPreferences plano, porque es una credencial real (regla §20: nunca
+  # secretos sin cifrar).
+  flutter_secure_storage: ^9.2.2
+  # Fase 4: tomar/elegir fotos reales para publicar (antes eran emojis simulados).
+  # Usa el selector de fotos del sistema en Android 13+ (no pide permiso en tiempo
+  # de ejecución ahí); en versiones viejas sí requiere el permiso de galería.
+  image_picker: ^1.1.2
+  # Fase 4: ubicación real del dispositivo para publicar (en vez de solo texto
+  # libre de estado/municipio) y para calcular la distancia real en el feed.
+  geolocator: ^13.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # Genera el ícono del celular (Android/iOS) desde el emblema oficial.
+  # Solo corre cuando tú lo invocas: `dart run flutter_launcher_icons`.
+  flutter_launcher_icons: ^0.14.4
+
+# Ícono de la app: emblema oficial en hueso sobre verde carbón.
+# En Android 8+ se usa el ícono "adaptativo" (fondo + primer plano por separado,
+# el sistema lo recorta en círculo/cuadro según el launcher).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/brand/app_icon.png"
+  adaptive_icon_background: "#1E2420"
+  adaptive_icon_foreground: "assets/brand/app_icon_foreground.png"
+  min_sdk_android: 21
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Logo oficial y emblemas de categoría (PNG blanco con transparencia; se
+    # tiñen en código al color que toque según el fondo).
+    - assets/brand/
+
+  fonts:
+    # Serif de inscripción para titulares (rediseño rústico). OFL, ver OFL-Cinzel.txt.
+    - family: Cinzel
+      fonts:
+        - asset: assets/fonts/Cinzel-600.ttf
+          weight: 600
+        - asset: assets/fonts/Cinzel-700.ttf
+          weight: 700
+        - asset: assets/fonts/Cinzel-800.ttf
+          weight: 800
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-700.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-800.ttf
+          weight: 800
