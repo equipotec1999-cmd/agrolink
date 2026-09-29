@@ -1,4 +1,4 @@
-# AgroLink 🌱 — Fase 4 (en progreso): conectado a la API real
+# AgroLink  — Fase 4 (en progreso): conectado a la API real
 
 Marketplace agropecuario para México. **Login/registro, catálogo y publicaciones (feed,
 detalle, publicar con fotos y ubicación reales) ya hablan con tu backend Laravel real.**
