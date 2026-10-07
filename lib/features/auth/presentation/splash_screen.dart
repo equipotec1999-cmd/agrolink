@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/agrolink_logo.dart';
 import '../application/auth_controller.dart';
+import '../../../core/push/push_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -30,6 +31,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
       // aquí solo decidimos a dónde navegar, sin ninguna llamada de red nueva.
       final loggedIn = ref.read(authProvider) != null;
       context.go(loggedIn ? '/home' : '/login');
+      // App abierta tocando una notificación push: se va directo a esa conversación.
+      if (loggedIn) {
+        final route = await ref.read(pushServiceProvider)?.takePendingRoute();
+        if (route != null && mounted) context.push(route);
+      }
     });
   }
 

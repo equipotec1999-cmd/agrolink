@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/push/push_service.dart';
 import '../data/auth_repository.dart';
 
 enum UserIntent { buy, sell, both }
@@ -23,17 +24,28 @@ final initialAuthUserProvider = Provider<AppUser?>((ref) => null);
 /// controller solo se encargue de manejar el estado, no de cómo se autentica.
 class AuthController extends Notifier<AppUser?> {
   @override
-  AppUser? build() => ref.read(initialAuthUserProvider);
+  AppUser? build() {
+    final restored = ref.read(initialAuthUserProvider);
+    // Sesión restaurada al abrir la app: se re-registra el token push (puede haber rotado).
+    if (restored != null) Future.microtask(_registerPush);
+    return restored;
+  }
+
+  void _registerPush() => ref.read(pushServiceProvider)?.register();
 
   Future<void> login(String email, String password) async {
     state = await ref.read(authRepositoryProvider).login(email, password);
+    _registerPush();
   }
 
   Future<void> register(String name, String email, String password, UserIntent intent) async {
     state = await ref.read(authRepositoryProvider).register(name, email, password, intent);
+    _registerPush();
   }
 
   Future<void> logout() async {
+    // Antes de cerrar sesión: el backend necesita el token de sesión para olvidar este celular.
+    await ref.read(pushServiceProvider)?.unregister();
     await ref.read(authRepositoryProvider).logout();
     state = null;
   }

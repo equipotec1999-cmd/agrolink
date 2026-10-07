@@ -4,10 +4,19 @@
     <!-- Ubicación: distancia en el feed y ubicación aproximada al publicar -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Push (Android 13+): permiso para mostrar notificaciones -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="AgroLink"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Canal y ícono por defecto de las notificaciones push (el canal se crea en MainActivity) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="agrolink_default"/>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_agrolink"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

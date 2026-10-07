@@ -28,6 +28,10 @@ dependencies:
   # Usa el selector de fotos del sistema en Android 13+ (no pide permiso en tiempo
   # de ejecución ahí); en versiones viejas sí requiere el permiso de galería.
   image_picker: ^1.1.2
+  # Push (Fase 5): avisos de mensajes y ofertas con la app cerrada (Firebase Cloud
+  # Messaging, gratis). Necesita android/app/google-services.json (no va en git).
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.7.0
   # Fase 4: ubicación real del dispositivo para publicar (en vez de solo texto
   # libre de estado/municipio) y para calcular la distancia real en el feed.
   geolocator: ^13.0.1

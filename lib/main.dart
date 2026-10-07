@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'core/network/api_client.dart';
 import 'core/network/token_storage.dart';
+import 'core/push/push_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_text.dart';
 import 'features/auth/application/auth_controller.dart';
@@ -39,6 +41,14 @@ Future<void> main() async {
   final catalogRepository = ApiCatalogRepository(apiClient);
   final authRepository = ApiAuthRepository(apiClient, tokenStorage);
 
+  // Push: si Firebase no está configurado (falta google-services.json) la app sigue
+  // sin avisos push en vez de fallar al arrancar.
+  PushService? pushService;
+  try {
+    await Firebase.initializeApp();
+    pushService = PushService(apiClient);
+  } catch (_) {}
+
   try {
     // Dos llamadas al arrancar, antes de mostrar cualquier pantalla: el catálogo (lo
     // necesita casi toda la app) y, si había un token guardado, confirmar que sigue
@@ -64,6 +74,7 @@ Future<void> main() async {
           favoritesRepositoryProvider.overrideWithValue(ApiFavoritesRepository(apiClient)),
           // "Mis" mensajes se decide con el usuario de la sesión actual, que cambia
           // al hacer login/logout; por eso se lee del provider en cada llamada.
+          pushServiceProvider.overrideWithValue(pushService),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),
           notificationsRepositoryProvider.overrideWithValue(ApiNotificationsRepository(apiClient)),
           chatRepositoryProvider.overrideWith(
