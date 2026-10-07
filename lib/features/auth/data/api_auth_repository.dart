@@ -107,6 +107,7 @@ class ApiAuthRepository implements AuthRepository {
       canModerate: json['can_moderate'] == true,
       twoFactorEnabled: json['two_factor_enabled'] == true,
       twoFactorRequired: json['two_factor_required'] == true,
+      canManageRules: json['can_manage_rules'] == true,
     );
   }
 }

@@ -109,6 +109,8 @@ class ProfileScreen extends ConsumerWidget {
             _MenuTile(icon: Icons.storefront_outlined, label: 'Mis ventas', onTap: () => context.push('/sales')),
             if (user?.canModerate ?? false)
               _MenuTile(icon: Icons.shield_outlined, label: 'Moderación', onTap: () => context.push('/moderation')),
+            if (user?.canManageRules ?? false)
+              _MenuTile(icon: Icons.gavel_rounded, label: 'Reglas de cumplimiento', onTap: () => context.push('/compliance-rules')),
             _MenuTile(icon: Icons.lock_outline_rounded, label: 'Seguridad', onTap: () => context.push('/security')),
             _MenuTile(icon: Icons.favorite_border_rounded, label: 'Favoritos', onTap: () => context.push('/favorites')),
             _MenuTile(icon: Icons.notifications_none_rounded, label: 'Notificaciones', onTap: () => context.push('/notifications')),

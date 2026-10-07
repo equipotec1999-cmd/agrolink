@@ -9,6 +9,7 @@ import 'core/network/token_storage.dart';
 import 'core/push/push_service.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_text.dart';
+import 'features/admin/data/compliance_rules_repository.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/auth/data/api_auth_repository.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -79,6 +80,7 @@ Future<void> main() async {
           // al hacer login/logout; por eso se lee del provider en cada llamada.
           pushServiceProvider.overrideWithValue(pushService),
           moderationRepositoryProvider.overrideWithValue(ApiModerationRepository(apiClient)),
+          complianceRulesRepositoryProvider.overrideWithValue(ApiComplianceRulesRepository(apiClient)),
           myListingsRepositoryProvider.overrideWithValue(ApiMyListingsRepository(apiClient)),
           twoFactorRepositoryProvider.overrideWithValue(ApiTwoFactorRepository(apiClient)),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),

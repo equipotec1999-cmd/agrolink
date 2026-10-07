@@ -14,6 +14,7 @@ class AppUser {
     this.canModerate = false,
     this.twoFactorEnabled = false,
     this.twoFactorRequired = false,
+    this.canManageRules = false,
   });
   final int id;
   final String name;
@@ -26,6 +27,9 @@ class AppUser {
   /// Verificación en dos pasos activa / obligatoria para esta cuenta (permisos administrativos).
   final bool twoFactorEnabled;
   final bool twoFactorRequired;
+
+  /// Puede administrar las reglas de cumplimiento.
+  final bool canManageRules;
 
   String get firstName => name.split(' ').first;
 }
