@@ -434,9 +434,10 @@ class _BasicsStep extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (draft.priceType != PriceType.quote) ...[
+        ...[
           Row(
             children: [
+              if (draft.priceType != PriceType.quote) ...[
               Expanded(
                 child: AgroTextField(
                   label: 'Precio (MXN)',
@@ -448,6 +449,7 @@ class _BasicsStep extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              ],
               Expanded(
                 child: AgroTextField(
                   label: _quantityLabel(draft.priceType, draft.unit, inTons: draft.quantityInTons),
@@ -530,12 +532,11 @@ String? _impliedUnit(PriceType? p) => switch (p) {
       PriceType.perAnimal => 'animal',
       PriceType.perKg => 'kg',
       PriceType.perLot => 'lote',
-      PriceType.quote => '',
       _ => null,
     };
 
 bool _showsUnitField(PriceType? p) =>
-    p == PriceType.perUnit || p == PriceType.fixed || p == PriceType.negotiable || p == null;
+    p == PriceType.perUnit || p == PriceType.quote || p == PriceType.fixed || p == PriceType.negotiable || p == null;
 
 /// Etiqueta de "cantidad disponible" según cómo se vende: "100 kg", "20 animales",
 /// "3 lotes", etcétera; para precio por unidad usa lo que el vendedor escribió.
