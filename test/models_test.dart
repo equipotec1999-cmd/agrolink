@@ -54,9 +54,9 @@ void main() {
       expect(o.total, 2800);
     });
 
-    test('estados del backend y solo "sent" está abierta', () {
-      expect(OfferStatusX.fromWire('accepted'), OfferStatus.accepted);
-      expect(OfferStatusX.fromWire('countered'), OfferStatus.countered);
+    test('estados del backend y solo "enviada" está abierta', () {
+      expect(OfferStatusX.fromWire('aceptada'), OfferStatus.accepted);
+      expect(OfferStatusX.fromWire('contraoferta'), OfferStatus.countered);
       expect(OfferStatusX.fromWire('desconocido'), OfferStatus.sent);
       expect(OfferStatus.sent.isOpen, isTrue);
       expect(OfferStatus.accepted.isOpen, isFalse);
@@ -88,7 +88,7 @@ void main() {
         };
 
     test('lee números en texto y la foto de portada', () {
-      final l = MyListing.fromJson(json('published'));
+      final l = MyListing.fromJson(json('publicada'));
       expect(l.id, '7');
       expect(l.price, 120.0);
       expect(l.quantity, 50.0);
@@ -97,18 +97,18 @@ void main() {
     });
 
     test('qué acciones corresponden a cada estado', () {
-      expect(MyListing.fromJson(json('rejected')).canResubmit, isTrue);
+      expect(MyListing.fromJson(json('rechazada')).canResubmit, isTrue);
       expect(MyListing.fromJson(json('suspended')).canResubmit, isTrue);
-      expect(MyListing.fromJson(json('published')).canResubmit, isFalse);
-      expect(MyListing.fromJson(json('draft')).canPublish, isTrue);
-      expect(MyListing.fromJson(json('archived')).canArchive, isFalse);
-      expect(MyListing.fromJson(json('published')).canArchive, isTrue);
+      expect(MyListing.fromJson(json('publicada')).canResubmit, isFalse);
+      expect(MyListing.fromJson(json('borrador')).canPublish, isTrue);
+      expect(MyListing.fromJson(json('archivada')).canArchive, isFalse);
+      expect(MyListing.fromJson(json('publicada')).canArchive, isTrue);
     });
 
     test('el motivo vacío se trata como ausente y el estado tiene etiqueta', () {
-      expect(MyListing.fromJson(json('rejected', note: '   ')).moderationNote, isNull);
-      expect(MyListing.fromJson(json('rejected', note: ' Fotos falsas ')).moderationNote, 'Fotos falsas');
-      expect(MyListing.fromJson(json('pending_review')).statusLabel, 'En revisión');
+      expect(MyListing.fromJson(json('rechazada', note: '   ')).moderationNote, isNull);
+      expect(MyListing.fromJson(json('rechazada', note: ' Fotos falsas ')).moderationNote, 'Fotos falsas');
+      expect(MyListing.fromJson(json('en_revision')).statusLabel, 'En revisión');
     });
   });
 
