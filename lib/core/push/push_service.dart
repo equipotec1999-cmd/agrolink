@@ -42,6 +42,23 @@ class PushService {
     } catch (_) {}
   }
 
+  /// ¿Este celular tiene permiso para mostrar avisos? (false si no hay Firebase o se negó)
+  Future<bool> notificationsAllowed() async {
+    try {
+      final s = await FirebaseMessaging.instance.getNotificationSettings();
+      return s.authorizationStatus == AuthorizationStatus.authorized ||
+          s.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Pide el permiso y registra el celular. Devuelve si quedó con avisos activos.
+  Future<bool> enableNotifications() async {
+    await register();
+    return notificationsAllowed();
+  }
+
   Future<void> _send(String token) async {
     try {
       await _client.post('/devices', body: {'token': token, 'platform': 'android'});

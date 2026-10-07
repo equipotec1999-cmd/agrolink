@@ -103,6 +103,7 @@ class ApiAuthRepository implements AuthRepository {
       id: json['id'] as int,
       name: json['name'] as String,
       email: json['email'] as String,
+      phone: json['phone'] as String?,
       intent: intent,
       canModerate: json['can_moderate'] == true,
       twoFactorEnabled: json['two_factor_enabled'] == true,

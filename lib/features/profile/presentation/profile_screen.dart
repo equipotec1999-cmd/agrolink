@@ -115,7 +115,7 @@ class ProfileScreen extends ConsumerWidget {
             _MenuTile(icon: Icons.favorite_border_rounded, label: 'Favoritos', onTap: () => context.push('/favorites')),
             _MenuTile(icon: Icons.notifications_none_rounded, label: 'Notificaciones', onTap: () => context.push('/notifications')),
             _MenuTile(icon: Icons.saved_search_rounded, label: 'Búsquedas guardadas', onTap: () => context.push('/saved-searches')),
-            _MenuTile(icon: Icons.settings_outlined, label: 'Configuración', onTap: () => soon('Configuración', 'Fase 4')),
+            _MenuTile(icon: Icons.settings_outlined, label: 'Configuración', onTap: () => context.push('/settings')),
             _MenuTile(
               icon: Icons.logout_rounded,
               label: 'Cerrar sesión',

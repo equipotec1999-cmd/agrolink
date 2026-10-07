@@ -22,6 +22,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/saved_searches/presentation/saved_searches_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../features/security/presentation/security_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/security/presentation/two_factor_challenge_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 
@@ -85,6 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/compliance-rules', builder: (context, state) => const ComplianceRulesScreen()),
       GoRoute(path: '/saved-searches', builder: (context, state) => const SavedSearchesScreen()),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       GoRoute(path: '/security', builder: (context, state) => const SecurityScreen()),
       GoRoute(
         path: '/listing/:id/edit',

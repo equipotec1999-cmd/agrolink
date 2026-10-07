@@ -24,6 +24,7 @@ import 'features/my_listings/data/my_listings_repository.dart';
 import 'features/notifications/data/notifications_repository.dart';
 import 'features/saved_searches/data/saved_searches_repository.dart';
 import 'features/security/data/two_factor_repository.dart';
+import 'features/settings/data/account_repository.dart';
 import 'features/operations/data/operations_repository.dart';
 import 'features/listings/data/listing_repository.dart';
 import 'shared/widgets/agrolink_logo.dart';
@@ -83,6 +84,7 @@ Future<void> main() async {
           moderationRepositoryProvider.overrideWithValue(ApiModerationRepository(apiClient)),
           complianceRulesRepositoryProvider.overrideWithValue(ApiComplianceRulesRepository(apiClient)),
           savedSearchesRepositoryProvider.overrideWithValue(ApiSavedSearchesRepository(apiClient)),
+          accountRepositoryProvider.overrideWithValue(ApiAccountRepository(apiClient)),
           myListingsRepositoryProvider.overrideWithValue(ApiMyListingsRepository(apiClient)),
           twoFactorRepositoryProvider.overrideWithValue(ApiTwoFactorRepository(apiClient)),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),

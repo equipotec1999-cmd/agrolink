@@ -15,10 +15,12 @@ class AppUser {
     this.twoFactorEnabled = false,
     this.twoFactorRequired = false,
     this.canManageRules = false,
+    this.phone,
   });
   final int id;
   final String name;
   final String email;
+  final String? phone;
   final UserIntent intent;
 
   /// El backend le dio permiso de moderar: se muestra la sección de moderación.
