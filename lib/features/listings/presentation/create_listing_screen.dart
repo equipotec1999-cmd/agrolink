@@ -403,7 +403,12 @@ class _BasicsStep extends ConsumerWidget {
           onChanged: (v) => ctrl.edit((d) => d.copyWith(description: v)),
         ),
         const SizedBox(height: 20),
-        const Text('Tipo de precio', style: AppText.label),
+        const Text('¿Cómo se vende?', style: AppText.label),
+        const SizedBox(height: 6),
+        Text(
+          'La unidad y el precio dependen de esta elección.',
+          style: AppText.muted.copyWith(fontSize: 12),
+        ),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
@@ -414,43 +419,57 @@ class _BasicsStep extends ConsumerWidget {
                 dense: true,
                 label: p.label,
                 selected: draft.priceType == p,
-                onTap: () => ctrl.edit((d) => d.copyWith(priceType: p)),
+                onTap: () {
+                  // Al elegir el tipo de precio ya queda la unidad obvia: por kg → "kg",
+                  // por animal → "animal", por lote → "lote". El vendedor solo escribe
+                  // la unidad cuando el tipo es "por unidad" (puede ser pieza, caja, etc.).
+                  final unit = _impliedUnit(p);
+                  ctrl.edit((d) => d.copyWith(
+                        priceType: p,
+                        unit: unit ?? (p == PriceType.perUnit ? '' : d.unit),
+                      ));
+                },
               ),
           ],
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: AgroTextField(
-                label: 'Precio (MXN)',
-                icon: Icons.attach_money_rounded,
-                initialValue: draft.price,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                suffixText: draft.priceType?.suffix,
-                onChanged: (v) => ctrl.edit((d) => d.copyWith(price: v)),
+        if (draft.priceType != PriceType.quote)
+          Row(
+            children: [
+              Expanded(
+                child: AgroTextField(
+                  label: 'Precio (MXN)',
+                  icon: Icons.attach_money_rounded,
+                  initialValue: draft.price,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  suffixText: draft.priceType?.suffix,
+                  onChanged: (v) => ctrl.edit((d) => d.copyWith(price: v)),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AgroTextField(
-                label: 'Cantidad disponible',
-                icon: Icons.inventory_2_outlined,
-                initialValue: draft.quantity,
-                keyboardType: TextInputType.number,
-                onChanged: (v) => ctrl.edit((d) => d.copyWith(quantity: v)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AgroTextField(
+                  label: _quantityLabel(draft.priceType, draft.unit),
+                  icon: Icons.inventory_2_outlined,
+                  initialValue: draft.quantity,
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => ctrl.edit((d) => d.copyWith(quantity: v)),
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        AgroTextField(
-          label: 'Unidad',
-          hint: 'Ej. cabeza, kg, lote, pieza',
-          icon: Icons.straighten_rounded,
-          initialValue: draft.unit,
-          onChanged: (v) => ctrl.edit((d) => d.copyWith(unit: v)),
-        ),
+            ],
+          ),
+        // "Unidad" solo aparece cuando el tipo de precio no la fija por sí mismo
+        // (perUnit, fixed, negotiable): ahí puede ser pieza, caja, bulto, etc.
+        if (_showsUnitField(draft.priceType)) ...[
+          const SizedBox(height: 16),
+          AgroTextField(
+            label: 'Unidad',
+            hint: 'Ej. pieza, caja, bulto, cabeza',
+            icon: Icons.straighten_rounded,
+            initialValue: draft.unit,
+            onChanged: (v) => ctrl.edit((d) => d.copyWith(unit: v)),
+          ),
+        ],
         const SizedBox(height: 16),
         _ToggleTile(
           title: 'Precio negociable',
@@ -467,6 +486,33 @@ class _BasicsStep extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Para tipos de precio con unidad implícita devuelve el texto que va al borrador
+/// (y que se usa como etiqueta en la cantidad). Para los que admiten unidad libre
+/// (por unidad, precio fijo, negociable), devuelve null — se le pide al vendedor.
+String? _impliedUnit(PriceType? p) => switch (p) {
+      PriceType.perAnimal => 'animal',
+      PriceType.perKg => 'kg',
+      PriceType.perLot => 'lote',
+      PriceType.quote => '',
+      _ => null,
+    };
+
+bool _showsUnitField(PriceType? p) =>
+    p == PriceType.perUnit || p == PriceType.fixed || p == PriceType.negotiable || p == null;
+
+/// Etiqueta de "cantidad disponible" según cómo se vende: "100 kg", "20 animales",
+/// "3 lotes", etcétera; para precio por unidad usa lo que el vendedor escribió.
+String _quantityLabel(PriceType? p, String unit) {
+  final u = switch (p) {
+    PriceType.perAnimal => 'animales',
+    PriceType.perKg => 'kg',
+    PriceType.perLot => 'lotes',
+    PriceType.perUnit => unit.trim().isEmpty ? 'unidades' : unit.trim(),
+    _ => unit.trim().isEmpty ? 'disponible' : unit.trim(),
+  };
+  return 'Cantidad ($u)';
 }
 
 class _ToggleTile extends StatelessWidget {

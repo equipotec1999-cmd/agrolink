@@ -42,12 +42,15 @@ class ApiCatalogRepository implements CatalogRepository {
           name: type['name'] as String,
           emoji: type['icon'] as String? ?? '📦',
           attributes: (type['attributes'] as List<dynamic>? ?? []).map(_attributeFromJson).toList(),
-          // El backend aún no expone price_types por tipo (Fase 1 lo definía por producto,
-          // no lo cambiamos); se ofrecen todas y el wizard ya filtra por lo que aplica.
-          priceTypes: const [
-            PriceType.fixed, PriceType.perUnit, PriceType.perKg,
-            PriceType.perAnimal, PriceType.perLot, PriceType.quote,
-          ],
+          // El backend manda los tipos de precio aplicables a cada producto
+          // (ProductTypeResource::PRICE_TYPES). Caen a un conjunto genérico si viene vacío.
+          priceTypes: ((type['price_types'] as List<dynamic>?) ?? const [])
+              .map((raw) => _priceTypeFromWire(raw as String))
+              .whereType<PriceType>()
+              .toList()
+              .let((list) => list.isEmpty
+                  ? const [PriceType.perUnit, PriceType.perLot, PriceType.quote]
+                  : list),
         ));
       }
     }
@@ -71,6 +74,16 @@ class ApiCatalogRepository implements CatalogRepository {
     );
   }
 
+  PriceType? _priceTypeFromWire(String v) => switch (v) {
+        'fixed' => PriceType.fixed,
+        'per_unit' => PriceType.perUnit,
+        'per_kg' => PriceType.perKg,
+        'per_animal' => PriceType.perAnimal,
+        'per_lot' => PriceType.perLot,
+        'quote' => PriceType.quote,
+        _ => null,
+      };
+
   AttributeDataType _dataType(String v) => switch (v) {
         'number' => AttributeDataType.number,
         'select' => AttributeDataType.select,
@@ -86,4 +99,8 @@ class ApiCatalogRepository implements CatalogRepository {
         'comercial' => AttributeGroup.comercial,
         _ => AttributeGroup.general,
       };
+}
+
+extension<T> on T {
+  R let<R>(R Function(T) f) => f(this);
 }
