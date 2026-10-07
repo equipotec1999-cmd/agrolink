@@ -171,8 +171,8 @@ class ApiListingRepository implements ListingRepository {
     );
 
     final locJson = json['location'] as Map<String, dynamic>?;
-    final approxLat = (locJson?['approx_lat'] as num?)?.toDouble();
-    final approxLng = (locJson?['approx_lng'] as num?)?.toDouble();
+    final approxLat = double.tryParse('${locJson?['approx_lat'] ?? ''}');
+    final approxLng = double.tryParse('${locJson?['approx_lng'] ?? ''}');
     final distanceKm = (pos != null && approxLat != null && approxLng != null)
         ? DeviceLocation.distanceKm(pos.latitude, pos.longitude, approxLat, approxLng)
         : -1.0;
@@ -208,11 +208,11 @@ class ApiListingRepository implements ListingRepository {
       seller: Seller(
         id: '${sellerJson['id']}',
         name: sellerJson['name'] as String,
-        memberSince: sellerJson['member_since'] as int? ?? DateTime.now().year,
-        completedOps: sellerJson['completed_operations'] as int? ?? 0,
-        accuracy: (sellerJson['rating_accuracy'] as num?)?.toDouble() ?? 0,
-        fulfillment: (sellerJson['rating_fulfillment'] as num?)?.toDouble() ?? 0,
-        communication: (sellerJson['rating_communication'] as num?)?.toDouble() ?? 0,
+        memberSince: int.tryParse('${sellerJson['member_since']}') ?? DateTime.now().year,
+        completedOps: int.tryParse('${sellerJson['completed_operations']}') ?? 0,
+        accuracy: double.tryParse('${sellerJson['rating_accuracy'] ?? 0}') ?? 0,
+        fulfillment: double.tryParse('${sellerJson['rating_fulfillment'] ?? 0}') ?? 0,
+        communication: double.tryParse('${sellerJson['rating_communication'] ?? 0}') ?? 0,
         verified: sellerJson['is_verified'] as bool? ?? false,
       ),
       gallery: gallery,
