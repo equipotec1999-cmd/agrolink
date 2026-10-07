@@ -1,10 +1,66 @@
-/// Mensaje de texto de una conversación.
+enum OfferStatus { sent, accepted, rejected, countered, cancelled, expired }
+
+extension OfferStatusX on OfferStatus {
+  String get label => switch (this) {
+        OfferStatus.sent => 'Enviada',
+        OfferStatus.accepted => 'Aceptada',
+        OfferStatus.rejected => 'Rechazada',
+        OfferStatus.countered => 'Contraofertada',
+        OfferStatus.cancelled => 'Cancelada',
+        OfferStatus.expired => 'Expirada',
+      };
+
+  bool get isOpen => this == OfferStatus.sent;
+
+  static OfferStatus fromWire(String v) => switch (v) {
+        'accepted' => OfferStatus.accepted,
+        'rejected' => OfferStatus.rejected,
+        'countered' => OfferStatus.countered,
+        'cancelled' => OfferStatus.cancelled,
+        'expired' => OfferStatus.expired,
+        _ => OfferStatus.sent,
+      };
+}
+
+class Offer {
+  const Offer({
+    required this.id,
+    required this.amount,
+    required this.quantity,
+    required this.status,
+    this.expiresAt,
+    this.operationId,
+  });
+
+  final String id;
+  final double amount; // precio POR UNIDAD (según el tipo de precio de la publicación)
+  final double quantity;
+  final OfferStatus status;
+  final DateTime? expiresAt;
+
+  /// Presente cuando la oferta fue aceptada: la operación que se creó.
+  final String? operationId;
+
+  double get total => amount * quantity;
+
+  Offer copyWith({OfferStatus? status, String? operationId}) => Offer(
+        id: id,
+        amount: amount,
+        quantity: quantity,
+        status: status ?? this.status,
+        expiresAt: expiresAt,
+        operationId: operationId ?? this.operationId,
+      );
+}
+
+/// Mensaje de una conversación: texto, u oferta (entonces `offer` no es null).
 class ChatMessage {
   const ChatMessage({
     required this.id,
     required this.mine,
     required this.at,
-    required this.text,
+    this.text = '',
+    this.offer,
     this.pending = false,
     this.failed = false,
   });
@@ -15,6 +71,7 @@ class ChatMessage {
   final bool mine;
   final DateTime at;
   final String text;
+  final Offer? offer;
 
   /// Enviado en la UI pero sin respuesta del servidor todavía.
   final bool pending;
@@ -24,11 +81,12 @@ class ChatMessage {
 
   bool get isLocal => id.startsWith('tmp-');
 
-  ChatMessage copyWith({bool? pending, bool? failed}) => ChatMessage(
+  ChatMessage copyWith({bool? pending, bool? failed, Offer? offer}) => ChatMessage(
         id: id,
         mine: mine,
         at: at,
         text: text,
+        offer: offer ?? this.offer,
         pending: pending ?? this.pending,
         failed: failed ?? this.failed,
       );

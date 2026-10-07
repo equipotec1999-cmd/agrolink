@@ -12,6 +12,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../chat/application/chat_controller.dart';
+import '../../chat/presentation/offer_sheet.dart';
 import '../application/listing_providers.dart';
 import '../domain/listing.dart';
 import 'widgets/listing_widgets.dart';
@@ -71,8 +72,22 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     }
   }
 
-  // Las ofertas son el siguiente bloque de la Fase 5 (backend aún sin endpoints).
-  void _offer() => showAgroSnack(context, 'Las ofertas llegan en la siguiente actualización', emoji: '🏷️');
+  Future<void> _offer() async {
+    if (ref.read(authProvider) == null) {
+      context.push('/login');
+      return;
+    }
+    final ctrl = ref.read(chatProvider.notifier);
+    try {
+      final convId = await ctrl.openFor(l);
+      final conv = ctrl.byId(convId);
+      if (conv == null || !mounted) return;
+      final sent = await showOfferSheet(context, conv);
+      if (sent && mounted) context.push('/chat/$convId');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '🏷️');
+    }
+  }
 
   void _report() {
     const reasons = [

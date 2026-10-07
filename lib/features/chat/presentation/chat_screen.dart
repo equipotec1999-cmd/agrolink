@@ -12,6 +12,7 @@ import '../../../shared/widgets/motion.dart';
 import '../../../shared/widgets/product_art.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat.dart';
+import 'offer_sheet.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key, required this.conversationId});
@@ -106,6 +107,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             key: ValueKey(m.id),
                             offset: 12,
                             child: _MessageItem(
+                              conversation: c,
                               message: m,
                               onRetry: () => _chat.retry(widget.conversationId, m.id),
                             ),
@@ -113,7 +115,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                       ),
           ),
-          _Composer(controller: _input, onSend: _send),
+          _Composer(
+            controller: _input,
+            onSend: _send,
+            onOffer: () => showOfferSheet(context, c),
+          ),
         ],
       ),
     );
@@ -206,8 +212,9 @@ class _ChatHeader extends StatelessWidget {
 }
 
 class _MessageItem extends StatelessWidget {
-  const _MessageItem({required this.message, required this.onRetry});
+  const _MessageItem({required this.conversation, required this.message, required this.onRetry});
 
+  final Conversation conversation;
   final ChatMessage message;
   final VoidCallback onRetry;
 
@@ -215,7 +222,9 @@ class _MessageItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final m = message;
 
-    final bubble = Opacity(
+    final bubble = m.offer != null
+        ? _OfferBubble(conversation: conversation, message: m)
+        : Opacity(
       opacity: m.pending ? 0.6 : 1,
       child: Container(
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
@@ -260,11 +269,131 @@ class _MessageItem extends StatelessWidget {
   }
 }
 
+class _OfferBubble extends ConsumerStatefulWidget {
+  const _OfferBubble({required this.conversation, required this.message});
+
+  final Conversation conversation;
+  final ChatMessage message;
+
+  @override
+  ConsumerState<_OfferBubble> createState() => _OfferBubbleState();
+}
+
+class _OfferBubbleState extends ConsumerState<_OfferBubble> {
+  bool _busy = false;
+
+  Color _statusColor(OfferStatus s) => switch (s) {
+        OfferStatus.accepted => AppColors.success,
+        OfferStatus.rejected || OfferStatus.cancelled || OfferStatus.expired => AppColors.danger,
+        OfferStatus.countered => AppColors.honey,
+        OfferStatus.sent => AppColors.sky,
+      };
+
+  Future<void> _respond(String action) async {
+    setState(() => _busy = true);
+    final error = await ref
+        .read(chatProvider.notifier)
+        .respondOffer(widget.conversation.id, widget.message.offer!.id, action);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (error != null) showAgroSnack(context, error, emoji: '⚠️');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final offer = widget.message.offer!;
+    final mine = widget.message.mine;
+    final dark = mine;
+
+    // Una oferta abierta cuyo plazo ya pasó se ve vencida sin esperar al servidor.
+    final expired = offer.status.isOpen && offer.expiresAt != null && offer.expiresAt!.isBefore(DateTime.now());
+    final status = expired ? OfferStatus.expired : offer.status;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 260,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: dark ? AppColors.ink : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: dark ? AppColors.ink : AppColors.line, width: 1.4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_offer_rounded, size: 16, color: dark ? AppColors.lime : AppColors.forest),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  mine ? 'TU OFERTA' : 'OFERTA RECIBIDA',
+                  style: AppText.overline.copyWith(color: dark ? Colors.white60 : AppColors.muted),
+                ),
+              ),
+              StatusPill(label: status.label, color: _statusColor(status)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: formatMoney(offer.amount),
+                style: AppText.price.copyWith(color: dark ? AppColors.bone : AppColors.ink, fontSize: 26),
+              ),
+              TextSpan(
+                text: ' ${widget.conversation.priceSuffix}',
+                style: AppText.muted.copyWith(color: dark ? Colors.white60 : AppColors.muted),
+              ),
+            ]),
+          ),
+          Text(
+            '× ${offer.quantity.toStringAsFixed(0)}  ·  Total ${formatMoney(offer.total)}',
+            style: AppText.muted.copyWith(fontSize: 12, color: dark ? Colors.white60 : AppColors.muted),
+          ),
+          if (status == OfferStatus.accepted && offer.operationId != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Operación #${offer.operationId} creada',
+              style: AppText.label.copyWith(color: dark ? AppColors.lime : AppColors.forest, fontSize: 12),
+            ),
+          ],
+          if (status.isOpen) ...[
+            const SizedBox(height: 14),
+            if (_busy)
+              const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2.5)))
+            else if (mine)
+              AgroButton(
+                label: 'Cancelar oferta',
+                tone: ButtonTone.light,
+                height: 44,
+                onTap: () => _respond('cancel'),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: AgroButton(label: 'Rechazar', tone: ButtonTone.light, height: 44, onTap: () => _respond('reject')),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AgroButton(label: 'Aceptar', tone: ButtonTone.lime, height: 44, onTap: () => _respond('accept')),
+                  ),
+                ],
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _Composer extends StatelessWidget {
-  const _Composer({required this.controller, required this.onSend});
+  const _Composer({required this.controller, required this.onSend, required this.onOffer});
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final VoidCallback onOffer;
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +405,23 @@ class _Composer extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           child: Row(
             children: [
+              Pressable(
+                scale: 0.88,
+                onTap: onOffer,
+                child: Container(
+                  height: 50,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(color: AppColors.lime, borderRadius: BorderRadius.circular(18)),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.local_offer_rounded, color: AppColors.ink, size: 18),
+                      SizedBox(width: 6),
+                      Text('Oferta', style: AppText.label),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: controller,

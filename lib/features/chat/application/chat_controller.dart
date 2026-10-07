@@ -104,13 +104,18 @@ class ChatController extends Notifier<ChatState> {
     final conv = byId(id);
     if (conv == null) return false;
     try {
-      final incoming = await ref.read(chatRepositoryProvider).messages(id, afterId: conv.lastServerId);
+      final page = await ref.read(chatRepositoryProvider).messages(id, afterId: conv.lastServerId);
       if (!ref.mounted) return false;
+      final incoming = page.messages;
+      final offerById = {for (final o in page.offers) o.id: o};
       _update(id, (c) {
         final known = {for (final m in c.messages) m.id};
         final merged = [
-          ...c.messages.where((m) => !m.isLocal),
-          ...incoming.where((m) => !known.contains(m.id)),
+          // Mensajes ya conocidos, con el estado de oferta más reciente del servidor.
+          for (final m in c.messages.where((m) => !m.isLocal))
+            m.offer != null && offerById[m.offer!.id] != null ? m.copyWith(offer: offerById[m.offer!.id]) : m,
+          for (final m in incoming.where((m) => !known.contains(m.id)))
+            m.offer != null && offerById[m.offer!.id] != null ? m.copyWith(offer: offerById[m.offer!.id]) : m,
         ]..sort((a, b) => (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0));
         // Los pendientes/fallidos siguen al final hasta que el servidor responda.
         final local = c.messages.where((m) => m.isLocal);
@@ -136,6 +141,45 @@ class ChatController extends Notifier<ChatState> {
           lastAt: local.at,
         ));
     await _deliver(convId, tmpId, text);
+  }
+
+  /// Envía una oferta. No es optimista: la acepta el servidor o no existe. Devuelve el
+  /// mensaje de error para mostrar (null si salió bien).
+  Future<String?> sendOffer(String convId, double amount, double quantity) async {
+    try {
+      final sent = await ref.read(chatRepositoryProvider).sendOffer(convId, amount: amount, quantity: quantity);
+      _update(convId, (c) {
+        final exists = c.messages.any((m) => m.id == sent.id);
+        // Si había una oferta abierta de la otra persona, el servidor la pasó a "contraofertada".
+        final messages = [
+          for (final m in c.messages)
+            if (m.offer != null && m.offer!.status.isOpen && !m.mine && !exists)
+              m.copyWith(offer: m.offer!.copyWith(status: OfferStatus.countered))
+            else
+              m,
+          if (!exists) sent,
+        ]..sort(_byServerOrder);
+        return c.copyWith(messages: messages, lastText: '🏷️ Oferta', lastMine: true, lastAt: sent.at);
+      });
+      return null;
+    } catch (e) {
+      return '$e';
+    }
+  }
+
+  /// action: 'accept' | 'reject' | 'cancel'. Devuelve el error para mostrar (null si salió bien).
+  Future<String?> respondOffer(String convId, String offerId, String action) async {
+    try {
+      final updated = await ref.read(chatRepositoryProvider).respondOffer(offerId, action);
+      _update(convId, (c) => c.copyWith(
+            messages: [for (final m in c.messages) m.offer?.id == offerId ? m.copyWith(offer: updated) : m],
+          ));
+      return null;
+    } catch (e) {
+      // 422 típico: la oferta ya cambió de estado (la otra persona respondió antes).
+      loadMessages(convId);
+      return '$e';
+    }
   }
 
   Future<void> retry(String convId, String tmpId) async {

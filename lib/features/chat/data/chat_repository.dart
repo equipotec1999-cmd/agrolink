@@ -15,9 +15,20 @@ abstract interface class ChatRepository {
 
   /// Mensajes en orden cronológico. Con [afterId] solo los posteriores (polling).
   /// Al pedirlos, el servidor marca como leídos los de la otra persona.
-  Future<List<ChatMessage>> messages(String conversationId, {int? afterId});
+  ///
+  /// `offers` trae el estado ACTUAL de todas las ofertas de la conversación: una
+  /// oferta vieja pudo ser aceptada/rechazada después y el polling con `afterId`
+  /// no vuelve a traer su mensaje.
+  Future<({List<ChatMessage> messages, List<Offer> offers})> messages(String conversationId, {int? afterId});
 
   Future<ChatMessage> send(String conversationId, String text);
+
+  /// Envía una oferta (o contraoferta si hay una abierta de la otra persona).
+  /// `amount` es el precio por unidad.
+  Future<ChatMessage> sendOffer(String conversationId, {required double amount, required double quantity});
+
+  /// action: 'accept' | 'reject' | 'cancel'. Devuelve la oferta ya actualizada.
+  Future<Offer> respondOffer(String offerId, String action);
 }
 
 /// Se sobreescribe en main.dart con la implementación real; este default solo
@@ -52,14 +63,32 @@ class ApiChatRepository implements ChatRepository {
   }
 
   @override
-  Future<List<ChatMessage>> messages(String conversationId, {int? afterId}) async {
+  Future<({List<ChatMessage> messages, List<Offer> offers})> messages(String conversationId, {int? afterId}) async {
     final response = await _client.get(
       '/conversations/$conversationId/messages',
       query: afterId == null ? null : {'after_id': afterId},
     ) as Map<String, dynamic>;
-    return (response['data'] as List<dynamic>)
-        .map((raw) => _message(raw as Map<String, dynamic>))
-        .toList();
+    return (
+      messages: (response['data'] as List<dynamic>).map((raw) => _message(raw as Map<String, dynamic>)).toList(),
+      offers: (response['offers'] as List<dynamic>? ?? const [])
+          .map((raw) => _offer(raw as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+
+  @override
+  Future<ChatMessage> sendOffer(String conversationId, {required double amount, required double quantity}) async {
+    final response = await _client.post(
+      '/conversations/$conversationId/offers',
+      body: {'amount': amount, 'quantity': quantity},
+    ) as Map<String, dynamic>;
+    return _message(response['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Offer> respondOffer(String offerId, String action) async {
+    final response = await _client.post('/offers/$offerId/$action') as Map<String, dynamic>;
+    return _offer(response['data'] as Map<String, dynamic>);
   }
 
   @override
@@ -71,11 +100,26 @@ class ApiChatRepository implements ChatRepository {
     return _message(response['data'] as Map<String, dynamic>);
   }
 
-  ChatMessage _message(Map<String, dynamic> json) => ChatMessage(
+  ChatMessage _message(Map<String, dynamic> json) {
+    final offer = json['offer'] as Map<String, dynamic>?;
+    return ChatMessage(
+      id: '${json['id']}',
+      mine: '${json['sender_id']}' == '${myId()}',
+      at: DateTime.tryParse('${json['created_at']}')?.toLocal() ?? DateTime.now(),
+      text: json['body'] as String? ?? '',
+      offer: offer == null ? null : _offer(offer),
+    );
+  }
+
+  // Laravel manda los decimales como número o como texto según el campo; se parsean
+  // de forma tolerante.
+  Offer _offer(Map<String, dynamic> json) => Offer(
         id: '${json['id']}',
-        mine: '${json['sender_id']}' == '${myId()}',
-        at: DateTime.tryParse('${json['created_at']}')?.toLocal() ?? DateTime.now(),
-        text: json['body'] as String? ?? '',
+        amount: double.tryParse('${json['amount']}') ?? 0,
+        quantity: double.tryParse('${json['quantity']}') ?? 0,
+        status: OfferStatusX.fromWire('${json['status']}'),
+        expiresAt: DateTime.tryParse('${json['expires_at'] ?? ''}')?.toLocal(),
+        operationId: json['operation_id'] == null ? null : '${json['operation_id']}',
       );
 
   Conversation _conversation(Map<String, dynamic> json) {
@@ -102,7 +146,7 @@ class ApiChatRepository implements ChatRepository {
       priceSuffix: priceTypeFromWire('${listing['price_type'] ?? 'fixed'}').suffix,
       counterpart: other['name'] as String? ?? '',
       unread: int.tryParse('${json['unread_count']}') ?? 0,
-      lastText: last?['body'] as String?,
+      lastText: last == null ? null : (last['has_offer'] == true ? '🏷️ Oferta' : last['body'] as String?),
       lastMine: last != null && '${last['sender_id']}' == '${myId()}',
       lastAt: DateTime.tryParse('${last?['created_at'] ?? json['last_message_at'] ?? ''}')?.toLocal(),
     );
