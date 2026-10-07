@@ -64,11 +64,6 @@ class ProfileScreen extends ConsumerWidget {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  if (!(user?.emailVerified ?? true))
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 8),
-                                      child: StatusPill(label: 'Correo sin verificar', color: AppColors.honey, icon: Icons.mail_outline_rounded),
-                                    ),
                                   Pressable(
                                     onTap: () => context.push('/profile/edit'),
                                     scale: 0.95,

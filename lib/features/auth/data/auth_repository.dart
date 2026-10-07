@@ -7,7 +7,7 @@ import '../application/auth_controller.dart';
 /// enviado al correo o teléfono. El token completo llega en /verify-contact.
 class ContactVerificationRequired implements Exception {
   const ContactVerificationRequired({required this.channel, required this.destination});
-  final String channel; // 'email' | 'sms'
+  final String channel; // siempre 'email'
   final String destination;
 }
 
@@ -25,9 +25,9 @@ abstract interface class AuthRepository {
   /// Lanza [TwoFactorRequired] si la cuenta tiene verificación en dos pasos.
   Future<AppUser> login(String email, String password);
   Future<AppUser> completeTwoFactor(String challengeToken, {String? code, String? recoveryCode});
-  /// Registra una cuenta. Lanza [ContactVerificationRequired] con el correo
-  /// al que se mandó el código. El token completo llega en [verifyContact].
-  Future<void> register(String name, String email, String password, UserIntent intent,
+  /// Registra una cuenta. Con la confirmación apagada en el servidor devuelve el usuario ya con
+  /// sesión; con ella encendida lanza [ContactVerificationRequired] y el token llega en [verifyContact].
+  Future<AppUser> register(String name, String email, String password, UserIntent intent,
       {String? phone, String? lastname});
 
   /// Confirma el código enviado al correo y devuelve el usuario con sesión.

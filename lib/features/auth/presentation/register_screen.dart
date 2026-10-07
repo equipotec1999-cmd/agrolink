@@ -58,8 +58,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             phone: phone.isEmpty ? null : phone,
             lastname: _lastname.text.trim().isEmpty ? null : _lastname.text.trim(),
           );
-      // Nunca llega aquí: register siempre lanza ContactVerificationRequired.
       if (!mounted) return;
+      context.go('/home');
     } on ContactVerificationRequired catch (v) {
       if (!mounted) return;
       context.go('/verify-contact', extra: {'destination': v.destination, 'channel': v.channel});

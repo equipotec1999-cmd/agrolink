@@ -93,8 +93,8 @@ class AuthController extends Notifier<AppUser?> {
     if (fresh != null) state = fresh;
   }
 
-  /// Crea la cuenta y lanza [ContactVerificationRequired] para que la UI muestre
-  /// la pantalla de confirmación con el código recibido por correo o SMS.
+  /// Crea la cuenta. Si el servidor exige confirmar el correo lanza [ContactVerificationRequired]
+  /// para que la UI muestre la pantalla del código; si no, la sesión queda iniciada.
   Future<void> register(
     String name,
     String email,
@@ -103,7 +103,7 @@ class AuthController extends Notifier<AppUser?> {
     String? phone,
     String? lastname,
   }) async {
-    await ref.read(authRepositoryProvider).register(
+    state = await ref.read(authRepositoryProvider).register(
           name,
           email,
           password,
@@ -111,6 +111,7 @@ class AuthController extends Notifier<AppUser?> {
           phone: phone,
           lastname: lastname,
         );
+    _registerPush();
   }
 
   Future<void> completeContactVerification({required String destination, required String code}) async {

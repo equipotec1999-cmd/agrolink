@@ -50,7 +50,7 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> register(String name, String email, String password, UserIntent intent,
+  Future<AppUser> register(String name, String email, String password, UserIntent intent,
       {String? phone, String? lastname}) async {
     final json = await _client.post(
       '/register',
@@ -64,7 +64,13 @@ class ApiAuthRepository implements AuthRepository {
         'password_confirmation': password,
       },
     );
-    // Siempre se requiere confirmación por el canal elegido.
+    // Confirmación apagada: el servidor ya entrega el token y la cuenta entra directo.
+    final token = json['token'] as String?;
+    if (token != null) {
+      await _tokenStorage.save(token);
+      return _userFromJson(json['user'] as Map<String, dynamic>, intent: intent);
+    }
+    // Confirmación encendida: hay que validar el código enviado al correo.
     final v = (json['verification'] as Map<String, dynamic>?) ?? const {};
     throw ContactVerificationRequired(
       channel: 'email',
