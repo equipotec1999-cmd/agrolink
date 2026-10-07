@@ -105,6 +105,8 @@ class ApiAuthRepository implements AuthRepository {
       email: json['email'] as String,
       phone: json['phone'] as String?,
       emailVerified: json['email_verified'] == true,
+      sellerVerified: json['seller_verified'] == true,
+      canReviewDocuments: json['can_review_documents'] == true,
       intent: intent,
       canModerate: json['can_moderate'] == true,
       twoFactorEnabled: json['two_factor_enabled'] == true,

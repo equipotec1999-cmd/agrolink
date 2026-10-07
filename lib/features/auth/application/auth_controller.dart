@@ -17,12 +17,18 @@ class AppUser {
     this.canManageRules = false,
     this.phone,
     this.emailVerified = false,
+    this.sellerVerified = false,
+    this.canReviewDocuments = false,
   });
   final int id;
   final String name;
   final String email;
   final String? phone;
   final bool emailVerified;
+
+  /// Vendedor verificado (insignia) y permiso de revisar solicitudes de verificación.
+  final bool sellerVerified;
+  final bool canReviewDocuments;
   final UserIntent intent;
 
   /// El backend le dio permiso de moderar: se muestra la sección de moderación.

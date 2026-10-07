@@ -8,6 +8,8 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/product_art.dart';
+import '../../auth/application/auth_controller.dart';
+import '../../verification/data/verification_repository.dart';
 import '../data/moderation_repository.dart';
 
 /// Pide un texto en un diálogo. Devuelve null si se cancela.
@@ -46,8 +48,9 @@ class ModerationScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canDocs = ref.watch(authProvider)?.canReviewDocuments ?? false;
     return DefaultTabController(
-      length: 2,
+      length: canDocs ? 3 : 2,
       child: Scaffold(
         body: SafeArea(
           child: Column(
@@ -62,8 +65,18 @@ class ModerationScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const TabBar(tabs: [Tab(text: 'Por revisar'), Tab(text: 'Reportes')]),
-              const Expanded(child: TabBarView(children: [_QueueTab(), _ReportsTab()])),
+              TabBar(tabs: [
+                const Tab(text: 'Por revisar'),
+                const Tab(text: 'Reportes'),
+                if (canDocs) const Tab(text: 'Vendedores'),
+              ]),
+              Expanded(
+                child: TabBarView(children: [
+                  const _QueueTab(),
+                  const _ReportsTab(),
+                  if (canDocs) const _SellersTab(),
+                ]),
+              ),
             ],
           ),
         ),
@@ -218,6 +231,116 @@ class _ReportsTab extends ConsumerWidget {
                 },
               ),
             ),
+    );
+  }
+}
+
+class _SellersTab extends ConsumerWidget {
+  const _SellersTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(pendingVerificationsProvider);
+    final repo = ref.read(verificationRepositoryProvider);
+
+    return pending.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => EmptyState(icon: Icons.wifi_off_rounded, title: 'No pudimos cargar', message: '$e'),
+      data: (items) => items.isEmpty
+          ? const EmptyState(
+              icon: Icons.verified_user_outlined,
+              title: 'Sin solicitudes',
+              message: 'No hay vendedores esperando verificación.',
+            )
+          : RefreshIndicator(
+              onRefresh: () => ref.refresh(pendingVerificationsProvider.future),
+              child: ListView.separated(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+                itemCount: items.length,
+                separatorBuilder: (context, i) => const SizedBox(height: 12),
+                itemBuilder: (context, i) {
+                  final v = items[i];
+                  return Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.line, width: 1.2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(v.userName, style: AppText.title),
+                        Text(v.userEmail, style: AppText.muted.copyWith(fontSize: 12.5)),
+                        if (v.businessName != null && v.businessName!.isNotEmpty)
+                          Text('Negocio: ${v.businessName}', style: AppText.muted.copyWith(fontSize: 12.5)),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final d in v.documents)
+                              ActionChip(
+                                label: Text(d.label),
+                                avatar: const Icon(Icons.image_outlined, size: 18),
+                                onPressed: () => _showDoc(context, repo, v.id, d),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          Expanded(
+                            child: AgroButton(
+                              label: 'Rechazar',
+                              tone: ButtonTone.light,
+                              height: 44,
+                              onTap: () async {
+                                final reason = await _askText(context,
+                                    title: 'Motivo del rechazo', hint: 'Se le muestra al vendedor');
+                                if (reason == null || !context.mounted) return;
+                                await _run(context, () => repo.reject(v.id, reason),
+                                    () => ref.invalidate(pendingVerificationsProvider), 'Solicitud rechazada');
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AgroButton(
+                              label: 'Verificar',
+                              tone: ButtonTone.lime,
+                              height: 44,
+                              onTap: () => _run(context, () => repo.approve(v.id),
+                                  () => ref.invalidate(pendingVerificationsProvider), 'Vendedor verificado'),
+                            ),
+                          ),
+                        ]),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  Future<void> _showDoc(BuildContext context, VerificationRepository repo, String reqId, VerificationDoc d) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialog) => Dialog(
+        child: FutureBuilder(
+          future: repo.documentBytes(reqId, d.id),
+          builder: (c, snap) {
+            if (snap.connectionState != ConnectionState.done) {
+              return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+            }
+            if (snap.hasError || snap.data == null) {
+              return const Padding(padding: EdgeInsets.all(24), child: Text('No se pudo abrir el documento.'));
+            }
+            return InteractiveViewer(child: Image.memory(snap.data!, fit: BoxFit.contain));
+          },
+        ),
+      ),
     );
   }
 }

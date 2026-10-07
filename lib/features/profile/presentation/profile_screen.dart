@@ -9,6 +9,7 @@ import '../../../shared/widgets/motion.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../my_listings/data/my_listings_repository.dart';
 import '../../settings/data/account_repository.dart';
+import '../../verification/data/verification_repository.dart';
 import '../../my_listings/presentation/my_listings_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -19,7 +20,6 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(authProvider);
     final name = user?.name ?? 'Productor Demo';
 
-    void soon(String what, String phase) => showAgroSnack(context, '$what: llega en $phase', emoji: '🚧');
 
     return Scaffold(
       body: SafeArea(
@@ -76,30 +76,45 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             FadeSlideIn(
               delay: const Duration(milliseconds: 80),
-              child: Pressable(
-                scale: 0.98,
-                onTap: () => soon('Verificación de vendedor', 'Fase 6'),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppColors.lime, borderRadius: BorderRadius.circular(16)),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.verified_user_rounded, color: AppColors.ink, size: 30),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Conviértete en vendedor verificado', style: AppText.title),
-                            Text('Más confianza = más ventas', style: TextStyle(fontFamily: AppText.body, fontSize: 12, color: AppColors.ink)),
-                          ],
+              child: Builder(builder: (context) {
+                final v = ref.watch(verificationStatusProvider).asData?.value;
+                final verified = (user?.sellerVerified ?? false) || (v?.isVerified ?? false);
+                final pending = !verified && (v?.isPending ?? false);
+                final title = verified
+                    ? 'Vendedor verificado'
+                    : pending
+                        ? 'Solicitud de verificación en revisión'
+                        : 'Conviértete en vendedor verificado';
+                final subtitle = verified
+                    ? 'Tus publicaciones muestran la insignia'
+                    : pending
+                        ? 'Te avisaremos cuando haya respuesta'
+                        : 'Más confianza = más ventas';
+                return Pressable(
+                  scale: 0.98,
+                  onTap: () => context.push('/verification'),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: AppColors.lime, borderRadius: BorderRadius.circular(16)),
+                    child: Row(
+                      children: [
+                        Icon(verified ? Icons.verified_rounded : Icons.verified_user_rounded, color: AppColors.ink, size: 30),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title, style: AppText.title),
+                              Text(subtitle, style: const TextStyle(fontFamily: AppText.body, fontSize: 12, color: AppColors.ink)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Icon(Icons.arrow_forward_rounded, color: AppColors.ink),
-                    ],
+                        const Icon(Icons.arrow_forward_rounded, color: AppColors.ink),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
             const SizedBox(height: 24),
             SectionHeader(title: 'Mis publicaciones', action: 'Nueva', onAction: () => context.push('/create')),
@@ -110,7 +125,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _MenuTile(icon: Icons.shopping_bag_outlined, label: 'Mis compras', onTap: () => context.push('/purchases')),
             _MenuTile(icon: Icons.storefront_outlined, label: 'Mis ventas', onTap: () => context.push('/sales')),
-            if (user?.canModerate ?? false)
+            if ((user?.canModerate ?? false) || (user?.canReviewDocuments ?? false))
               _MenuTile(icon: Icons.shield_outlined, label: 'Moderación', onTap: () => context.push('/moderation')),
             if (user?.canManageRules ?? false)
               _MenuTile(icon: Icons.gavel_rounded, label: 'Reglas de cumplimiento', onTap: () => context.push('/compliance-rules')),

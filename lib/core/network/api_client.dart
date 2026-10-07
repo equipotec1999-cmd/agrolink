@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -117,6 +118,37 @@ class ApiClient {
       timeout: _uploadTimeout,
     );
     return _decode(response);
+  }
+
+  /// Varios campos y archivos en una sola petición multipart (p. ej. documentos de verificación).
+  Future<dynamic> postMultipartForm(
+    String path, {
+    Map<String, String> fields = const {},
+    Map<String, String> files = const {},
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    final headers = await _headers();
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+    request.fields.addAll(fields);
+    for (final e in files.entries) {
+      request.files.add(await http.MultipartFile.fromPath(e.key, e.value));
+    }
+
+    final response = await _send(
+      () async => http.Response.fromStream(await _client.send(request)),
+      timeout: _uploadTimeout,
+    );
+    return _decode(response);
+  }
+
+  /// Descarga un archivo binario (p. ej. un documento de verificación) con la sesión actual.
+  Future<Uint8List> getBytes(String path) async {
+    final headers = await _headers();
+    final response = await _send(() => _client.get(Uri.parse('$baseUrl$path'), headers: headers), timeout: _uploadTimeout);
+    if (response.statusCode >= 200 && response.statusCode < 300) return response.bodyBytes;
+    _decode(response); // lanza el ApiException con el mensaje de Laravel
+    throw ApiException('No se pudo descargar el archivo (${response.statusCode}).', statusCode: response.statusCode);
   }
 
   dynamic _decode(http.Response response) {

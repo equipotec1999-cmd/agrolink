@@ -24,6 +24,7 @@ import '../../features/search/presentation/search_screen.dart';
 import '../../features/security/presentation/security_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/security/presentation/two_factor_challenge_screen.dart';
+import '../../features/verification/presentation/verification_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 
 CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
@@ -87,6 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/compliance-rules', builder: (context, state) => const ComplianceRulesScreen()),
       GoRoute(path: '/saved-searches', builder: (context, state) => const SavedSearchesScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: '/verification', builder: (context, state) => const VerificationScreen()),
       GoRoute(path: '/security', builder: (context, state) => const SecurityScreen()),
       GoRoute(
         path: '/listing/:id/edit',
