@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../my_listings/data/my_listings_repository.dart';
 import '../../../core/location/device_location.dart';
 import '../../../core/network/api_exception.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../shared/widgets/agro_widgets.dart';
@@ -433,7 +434,7 @@ class _BasicsStep extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (draft.priceType != PriceType.quote)
+        if (draft.priceType != PriceType.quote) ...[
           Row(
             children: [
               Expanded(
@@ -449,15 +450,49 @@ class _BasicsStep extends ConsumerWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: AgroTextField(
-                  label: _quantityLabel(draft.priceType, draft.unit),
+                  label: _quantityLabel(draft.priceType, draft.unit, inTons: draft.quantityInTons),
                   icon: Icons.inventory_2_outlined,
                   initialValue: draft.quantity,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (v) => ctrl.edit((d) => d.copyWith(quantity: v)),
                 ),
               ),
             ],
           ),
+          // Para precios "por kg" damos la opción de ingresar la cantidad en toneladas:
+          // el precio sigue siendo por kg (estándar comercial) y la app convierte x1000
+          // al enviar; así no hay que calcular mentalmente los kilos.
+          if (draft.priceType == PriceType.perKg) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text('Mi cantidad está en:', style: AppText.muted.copyWith(fontSize: 12.5)),
+                const SizedBox(width: 10),
+                AgroChip(
+                  dense: true,
+                  label: 'kg',
+                  selected: !draft.quantityInTons,
+                  onTap: () => ctrl.edit((d) => d.copyWith(quantityInTons: false)),
+                ),
+                const SizedBox(width: 6),
+                AgroChip(
+                  dense: true,
+                  label: 'toneladas',
+                  selected: draft.quantityInTons,
+                  onTap: () => ctrl.edit((d) => d.copyWith(quantityInTons: true)),
+                ),
+              ],
+            ),
+            if (draft.quantityInTons && (double.tryParse(draft.quantity) ?? 0) > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 2),
+                child: Text(
+                  '= ${formatQuantity((double.tryParse(draft.quantity) ?? 0) * 1000)} kg',
+                  style: AppText.muted.copyWith(fontSize: 12),
+                ),
+              ),
+          ],
+        ],
         // "Unidad" solo aparece cuando el tipo de precio no la fija por sí mismo
         // (perUnit, fixed, negotiable): ahí puede ser pieza, caja, bulto, etc.
         if (_showsUnitField(draft.priceType)) ...[
@@ -504,10 +539,10 @@ bool _showsUnitField(PriceType? p) =>
 
 /// Etiqueta de "cantidad disponible" según cómo se vende: "100 kg", "20 animales",
 /// "3 lotes", etcétera; para precio por unidad usa lo que el vendedor escribió.
-String _quantityLabel(PriceType? p, String unit) {
+String _quantityLabel(PriceType? p, String unit, {bool inTons = false}) {
   final u = switch (p) {
     PriceType.perAnimal => 'animales',
-    PriceType.perKg => 'kg',
+    PriceType.perKg => inTons ? 'ton' : 'kg',
     PriceType.perLot => 'lotes',
     PriceType.perUnit => unit.trim().isEmpty ? 'unidades' : unit.trim(),
     _ => unit.trim().isEmpty ? 'disponible' : unit.trim(),

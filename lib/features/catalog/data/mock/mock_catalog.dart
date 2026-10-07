@@ -145,7 +145,7 @@ const _cosecha = [
     key: 'presentacion',
     label: 'Presentación',
     type: AttributeDataType.select,
-    options: ['Granel', 'Caja', 'Arpilla', 'Tonelada'],
+    options: ['Granel', 'Caja', 'Arpilla', 'Saco (1 ton)'],
     group: AttributeGroup.comercial,
   ),
   AttributeDef(

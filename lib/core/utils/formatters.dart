@@ -11,6 +11,16 @@ String formatMoney(num value) {
   return '${negative ? '-' : ''}\$$buffer';
 }
 
+/// Formato de cantidad sin signo de moneda: 1500 -> "1,500", 0.5 -> "0.5".
+String formatQuantity(num value) {
+  if (value == value.roundToDouble()) return formatMoney(value).replaceAll('\$', '');
+  // Para decimales, deja hasta 2 lugares y limpia ceros a la derecha.
+  final text = value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  final parts = text.split('.');
+  final intPart = formatMoney(num.parse(parts[0])).replaceAll('\$', '');
+  return parts.length == 2 ? '$intPart.${parts[1]}' : intPart;
+}
+
 String formatTime(DateTime d) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${two(d.hour)}:${two(d.minute)}';

@@ -22,6 +22,7 @@ class ListingDraft {
     this.documents = 0,
     this.lat,
     this.lng,
+    this.quantityInTons = false,
   });
 
   final String? categoryId;
@@ -49,8 +50,17 @@ class ListingDraft {
   // de una Property ya registrada (regla del propio StoreListingRequest).
   final double? lat;
   final double? lng;
+  // Al vender "por kg" el vendedor puede ingresar la cantidad en toneladas.
+  // Se convierte a kg al enviar al backend (quantity × 1000). No viaja al API.
+  final bool quantityInTons;
 
   bool get hasLocation => lat != null && lng != null;
+
+  /// Cantidad final que se envía al backend (siempre en kg cuando el precio es por kg).
+  double get quantityForApi {
+    final n = double.tryParse(quantity) ?? 0;
+    return quantityInTons ? n * 1000 : n;
+  }
 
   ListingDraft copyWith({
     String? categoryId,
@@ -70,6 +80,7 @@ class ListingDraft {
     int? documents,
     double? lat,
     double? lng,
+    bool? quantityInTons,
   }) {
     return ListingDraft(
       categoryId: categoryId ?? this.categoryId,
@@ -90,6 +101,7 @@ class ListingDraft {
       documents: documents ?? this.documents,
       lat: lat ?? this.lat,
       lng: lng ?? this.lng,
+      quantityInTons: quantityInTons ?? this.quantityInTons,
     );
   }
 
@@ -112,6 +124,7 @@ class ListingDraft {
         documents: documents,
         lat: lat,
         lng: lng,
+        quantityInTons: quantityInTons,
       );
 }
 

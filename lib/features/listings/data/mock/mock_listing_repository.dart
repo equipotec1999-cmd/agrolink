@@ -445,7 +445,7 @@ final mockListings = <Listing>[
       ListingAttributeValue('fecha_cosecha', 'Continua'),
       ListingAttributeValue('calidad', 'Primera'),
       ListingAttributeValue('madurez', 'Pintón'),
-      ListingAttributeValue('presentacion_cosecha', 'Tonelada'),
+      ListingAttributeValue('presentacion_cosecha', 'Saco (1 ton)'),
       ListingAttributeValue('disponible_kg', '8000'),
       ListingAttributeValue('pedido_minimo', '1000'),
     ],

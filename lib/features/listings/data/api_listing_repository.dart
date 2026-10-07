@@ -114,7 +114,9 @@ class ApiListingRepository implements ListingRepository {
       if (draft.description.trim().isNotEmpty) 'description': draft.description.trim(),
       if (draft.priceType != PriceType.quote) 'price': double.tryParse(draft.price),
       'price_type': _priceTypeWire(draft.priceType ?? type.priceTypes.first),
-      'quantity': double.tryParse(draft.quantity) ?? 0,
+      // Si el vendedor ingresó en toneladas, el borrador lo convierte a kg
+      // (el backend siempre guarda la cantidad en la unidad declarada).
+      'quantity': draft.quantityForApi,
       'unit': draft.unit.trim(),
       'sale_mode': draft.isLot ? 'lot' : 'individual',
       'negotiable': draft.negotiable,
