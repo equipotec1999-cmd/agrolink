@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
@@ -86,6 +87,7 @@ class AgroTextField extends StatefulWidget {
     this.suffixText,
     this.maxLines = 1,
     this.textInputAction,
+    this.inputFormatters,
   });
 
   final String label;
@@ -100,6 +102,7 @@ class AgroTextField extends StatefulWidget {
   final String? suffixText;
   final int maxLines;
   final TextInputAction? textInputAction;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   State<AgroTextField> createState() => _AgroTextFieldState();
@@ -128,6 +131,7 @@ class _AgroTextFieldState extends State<AgroTextField> {
           onChanged: widget.onChanged,
           validator: widget.validator,
           keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
           obscureText: _hidden,
           maxLines: widget.obscure ? 1 : widget.maxLines,
           textInputAction: widget.textInputAction,

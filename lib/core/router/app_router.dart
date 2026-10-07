@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/admin/presentation/compliance_rules_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/verify_contact_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/chat/presentation/chat_screen.dart';
 import '../../features/chat/presentation/inbox_screen.dart';
@@ -69,6 +70,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => TwoFactorChallengeScreen(challengeToken: state.extra! as String),
       ),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+        path: '/verify-contact',
+        builder: (context, state) {
+          final args = state.extra is Map ? state.extra as Map : const {};
+          return VerifyContactScreen(
+            destination: (args['destination'] as String?) ?? '',
+            channel: (args['channel'] as String?) ?? 'email',
+          );
+        },
+      ),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _fadePage(state, AppShell(shell: shell)),
         branches: [

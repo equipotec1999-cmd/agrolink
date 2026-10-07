@@ -50,20 +50,43 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AppUser> register(String name, String email, String password, UserIntent intent, {String? lastname}) async {
+  Future<void> register(String name, String password, UserIntent intent,
+      {String? email, String? phone, String? lastname, String channel = 'email'}) async {
     final json = await _client.post(
       '/register',
       withAuth: false,
       body: {
         'name': name,
         if (lastname != null && lastname.trim().isNotEmpty) 'lastname': lastname.trim(),
-        'email': email,
+        if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+        if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
         'password': password,
         'password_confirmation': password,
+        'verify_channel': channel,
       },
     );
+    // Siempre se requiere confirmación por el canal elegido.
+    final v = (json['verification'] as Map<String, dynamic>?) ?? const {};
+    throw ContactVerificationRequired(
+      channel: v['channel'] as String? ?? channel,
+      destination: v['destination'] as String? ?? (email ?? phone ?? ''),
+    );
+  }
+
+  @override
+  Future<AppUser> verifyContact({required String destination, required String code}) async {
+    final json = await _client.post(
+      '/verify-contact',
+      withAuth: false,
+      body: {'destination': destination, 'code': code, 'device_name': 'app'},
+    );
     await _tokenStorage.save(json['token'] as String);
-    return _userFromJson(json['user'] as Map<String, dynamic>, intent: intent);
+    return _userFromJson(json['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> resendVerification(String destination) async {
+    await _client.post('/resend-verification', withAuth: false, body: {'destination': destination});
   }
 
   @override

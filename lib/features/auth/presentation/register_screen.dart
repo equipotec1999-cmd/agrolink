@@ -9,6 +9,7 @@ import '../../../core/utils/validators.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
 import '../application/auth_controller.dart';
+import '../data/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -22,8 +23,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _name = TextEditingController();
   final _lastname = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   UserIntent _intent = UserIntent.both;
+  // Canal preferido para recibir el código de confirmación.
+  String _channel = 'email';
   bool _terms = false;
   bool _loading = false;
 
@@ -32,6 +36,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _name.dispose();
     _lastname.dispose();
     _email.dispose();
+    _phone.dispose();
     _password.dispose();
     super.dispose();
   }
@@ -42,19 +47,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       showAgroSnack(context, 'Acepta los términos para continuar', emoji: '📄');
       return;
     }
+    final email = _email.text.trim();
+    final phone = _phone.text.trim();
+    if (email.isEmpty && phone.isEmpty) {
+      showAgroSnack(context, 'Necesitamos un correo o un teléfono', emoji: '⚠️');
+      return;
+    }
+    if (_channel == 'email' && email.isEmpty) {
+      showAgroSnack(context, 'Para recibir el código por correo, escribe uno', emoji: '⚠️');
+      return;
+    }
+    if (_channel == 'sms' && phone.isEmpty) {
+      showAgroSnack(context, 'Para recibir el código por SMS, escribe tu teléfono', emoji: '⚠️');
+      return;
+    }
+
     setState(() => _loading = true);
     try {
-      await ref
-          .read(authProvider.notifier)
-          .register(
+      await ref.read(authProvider.notifier).register(
             _name.text.trim(),
-            _email.text.trim(),
             _password.text,
             _intent,
+            email: email.isEmpty ? null : email,
+            phone: phone.isEmpty ? null : phone,
             lastname: _lastname.text.trim().isEmpty ? null : _lastname.text.trim(),
+            channel: _channel,
           );
+      // Nunca llega aquí: register siempre lanza ContactVerificationRequired.
       if (!mounted) return;
-      context.go('/home');
+    } on ContactVerificationRequired catch (v) {
+      if (!mounted) return;
+      context.go('/verify-contact', extra: {'destination': v.destination, 'channel': v.channel});
     } on ApiException catch (e) {
       if (!mounted) return;
       showAgroSnack(context, e.message, emoji: '⚠️');
@@ -124,14 +147,50 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                 ]),
+                const SizedBox(height: 20),
+                const Text('¿Dónde te mandamos el código?', style: AppText.label),
+                const SizedBox(height: 6),
+                Text(
+                  'Elige por dónde confirmar la cuenta. Te mandaremos un código de 6 dígitos.',
+                  style: AppText.muted.copyWith(fontSize: 12),
+                ),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(
+                    child: _IntentCard(
+                      emoji: '📧',
+                      label: 'Correo',
+                      selected: _channel == 'email',
+                      onTap: () => setState(() => _channel = 'email'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _IntentCard(
+                      emoji: '📱',
+                      label: 'Teléfono',
+                      selected: _channel == 'sms',
+                      onTap: () => setState(() => _channel = 'sms'),
+                    ),
+                  ),
+                ]),
                 const SizedBox(height: 16),
                 AgroTextField(
                   label: 'Correo electrónico',
                   icon: Icons.alternate_email_rounded,
-                  hint: 'tu@correo.com',
+                  hint: _channel == 'email' ? 'tu@correo.com' : 'Opcional',
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? null : Validators.email(v),
+                ),
+                const SizedBox(height: 16),
+                AgroTextField(
+                  label: 'Teléfono',
+                  icon: Icons.phone_outlined,
+                  hint: _channel == 'sms' ? '+52 999 123 4567' : 'Opcional',
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? null : Validators.phone(v),
                 ),
                 const SizedBox(height: 16),
                 AgroTextField(

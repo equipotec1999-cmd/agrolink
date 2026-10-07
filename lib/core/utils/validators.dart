@@ -30,6 +30,14 @@ abstract final class Validators {
     return null;
   }
 
+  /// Teléfono MX: 10 dígitos (puede traer +52, espacios, guiones). El servidor vuelve a validar.
+  static String? phone(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Escribe tu teléfono';
+    final digits = v.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length < 10 || digits.length > 15) return 'Teléfono no válido';
+    return null;
+  }
+
   static String? positiveNumber(String? v) {
     final n = double.tryParse((v ?? '').replaceAll(',', ''));
     if (n == null || n <= 0) return 'Ingresa un número mayor a 0';

@@ -93,8 +93,30 @@ class AuthController extends Notifier<AppUser?> {
     if (fresh != null) state = fresh;
   }
 
-  Future<void> register(String name, String email, String password, UserIntent intent, {String? lastname}) async {
-    state = await ref.read(authRepositoryProvider).register(name, email, password, intent, lastname: lastname);
+  /// Crea la cuenta y lanza [ContactVerificationRequired] para que la UI muestre
+  /// la pantalla de confirmación con el código recibido por correo o SMS.
+  Future<void> register(
+    String name,
+    String password,
+    UserIntent intent, {
+    String? email,
+    String? phone,
+    String? lastname,
+    String channel = 'email',
+  }) async {
+    await ref.read(authRepositoryProvider).register(
+          name,
+          password,
+          intent,
+          email: email,
+          phone: phone,
+          lastname: lastname,
+          channel: channel,
+        );
+  }
+
+  Future<void> completeContactVerification({required String destination, required String code}) async {
+    state = await ref.read(authRepositoryProvider).verifyContact(destination: destination, code: code);
     _registerPush();
   }
 
