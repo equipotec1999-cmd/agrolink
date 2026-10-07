@@ -87,6 +87,7 @@ class ApiAuthRepository implements AuthRepository {
       name: json['name'] as String,
       email: json['email'] as String,
       intent: intent,
+      canModerate: json['can_moderate'] == true,
     );
   }
 }

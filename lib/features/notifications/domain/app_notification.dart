@@ -22,6 +22,7 @@ class AppNotification {
         'offer_received' || 'offer_countered' => '🏷️',
         'offer_accepted' => '🤝',
         'offer_rejected' || 'offer_cancelled' => '🚫',
+        'listing_rejected' || 'listing_suspended' => '🛡️',
         _ => '🔔',
       };
 

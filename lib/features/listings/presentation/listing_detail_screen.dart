@@ -12,6 +12,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../chat/application/chat_controller.dart';
+import '../../moderation/data/moderation_repository.dart';
 import '../../chat/presentation/offer_sheet.dart';
 import '../application/listing_providers.dart';
 import '../domain/listing.dart';
@@ -90,16 +91,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   }
 
   void _report() {
-    const reasons = [
-      'Fraude',
-      'Información falsa',
-      'Producto inexistente',
-      'Documentación sospechosa',
-      'Publicación duplicada',
-      'Conducta inapropiada',
-      'Producto no permitido',
-      'Otro',
-    ];
+    if (ref.read(authProvider) == null) {
+      context.push('/login');
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.cream,
@@ -119,14 +114,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final r in reasons)
+                  for (final r in reportReasons.entries)
                     AgroChip(
                       dense: true,
-                      label: r,
+                      label: r.value,
                       selected: false,
                       onTap: () {
                         Navigator.of(sheet).pop();
-                        showAgroSnack(context, 'Reporte enviado: $r', emoji: '🚩');
+                        _sendReport(r.key, r.value);
                       },
                     ),
                 ],
@@ -136,6 +131,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
         ),
       ),
     );
+  }
+
+  Future<void> _sendReport(String reason, String label) async {
+    try {
+      await ref.read(moderationRepositoryProvider).reportListing(l.id, reason);
+      if (mounted) showAgroSnack(context, 'Reporte enviado: $label', emoji: '🚩');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+    }
   }
 
   @override

@@ -150,6 +150,8 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _MenuTile(icon: Icons.shopping_bag_outlined, label: 'Mis compras', onTap: () => context.push('/purchases')),
             _MenuTile(icon: Icons.storefront_outlined, label: 'Mis ventas', onTap: () => context.push('/sales')),
+            if (user?.canModerate ?? false)
+              _MenuTile(icon: Icons.shield_outlined, label: 'Moderación', onTap: () => context.push('/moderation')),
             _MenuTile(icon: Icons.favorite_border_rounded, label: 'Favoritos', onTap: () => context.push('/favorites')),
             _MenuTile(icon: Icons.notifications_none_rounded, label: 'Notificaciones', onTap: () => context.push('/notifications')),
             _MenuTile(icon: Icons.saved_search_rounded, label: 'Búsquedas guardadas', onTap: () => soon('Alertas', 'Fase 4')),

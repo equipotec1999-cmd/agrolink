@@ -6,11 +6,20 @@ import '../data/auth_repository.dart';
 enum UserIntent { buy, sell, both }
 
 class AppUser {
-  const AppUser({required this.id, required this.name, required this.email, required this.intent});
+  const AppUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.intent,
+    this.canModerate = false,
+  });
   final int id;
   final String name;
   final String email;
   final UserIntent intent;
+
+  /// El backend le dio permiso de moderar: se muestra la sección de moderación.
+  final bool canModerate;
 
   String get firstName => name.split(' ').first;
 }

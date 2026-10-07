@@ -18,6 +18,7 @@ import 'features/catalog/domain/catalog.dart';
 import 'features/chat/data/chat_repository.dart';
 import 'features/favorites/data/favorites_repository.dart';
 import 'features/listings/data/api_listing_repository.dart';
+import 'features/moderation/data/moderation_repository.dart';
 import 'features/notifications/data/notifications_repository.dart';
 import 'features/operations/data/operations_repository.dart';
 import 'features/listings/data/listing_repository.dart';
@@ -75,6 +76,7 @@ Future<void> main() async {
           // "Mis" mensajes se decide con el usuario de la sesión actual, que cambia
           // al hacer login/logout; por eso se lee del provider en cada llamada.
           pushServiceProvider.overrideWithValue(pushService),
+          moderationRepositoryProvider.overrideWithValue(ApiModerationRepository(apiClient)),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),
           notificationsRepositoryProvider.overrideWithValue(ApiNotificationsRepository(apiClient)),
           chatRepositoryProvider.overrideWith(
