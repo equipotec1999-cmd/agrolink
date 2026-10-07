@@ -105,6 +105,7 @@ class Conversation {
     required this.listingPrice,
     required this.priceSuffix,
     required this.counterpart,
+    this.counterpartId,
     this.listingCoverUrl,
     this.messages = const [],
     this.messagesLoaded = false,
@@ -123,6 +124,7 @@ class Conversation {
   final double listingPrice;
   final String priceSuffix;
   final String counterpart;
+  final String? counterpartId; // id del usuario del otro lado (para reportarlo)
   final List<ChatMessage> messages;
   final bool messagesLoaded;
   final int unread;
@@ -159,6 +161,7 @@ class Conversation {
         listingPrice: listingPrice,
         priceSuffix: priceSuffix,
         counterpart: counterpart,
+        counterpartId: counterpartId,
         messages: messages ?? this.messages,
         messagesLoaded: messagesLoaded ?? this.messagesLoaded,
         unread: unread ?? this.unread,

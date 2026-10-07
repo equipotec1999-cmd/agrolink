@@ -145,6 +145,7 @@ class ApiChatRepository implements ChatRepository {
       listingPrice: double.tryParse('${listing['price'] ?? 0}') ?? 0,
       priceSuffix: priceTypeFromWire('${listing['price_type'] ?? 'fixed'}').suffix,
       counterpart: other['name'] as String? ?? '',
+      counterpartId: other['id'] == null ? null : '${other['id']}',
       unread: int.tryParse('${json['unread_count']}') ?? 0,
       lastText: last == null ? null : (last['has_offer'] == true ? '🏷️ Oferta' : last['body'] as String?),
       lastMine: last != null && '${last['sender_id']}' == '${myId()}',

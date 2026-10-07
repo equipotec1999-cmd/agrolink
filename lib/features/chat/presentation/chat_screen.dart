@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
 import '../../../shared/widgets/product_art.dart';
+import '../../moderation/data/moderation_repository.dart';
 import '../application/chat_controller.dart';
 import '../domain/chat.dart';
 import 'offer_sheet.dart';
@@ -23,6 +25,56 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  /// Reportar a la otra persona de la conversación: elige un motivo y llega a moderación.
+  void _reportUser(Conversation c) {
+    final id = c.counterpartId;
+    if (id == null) {
+      showAgroSnack(context, 'No pudimos identificar al usuario.', emoji: '⚠️');
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.cream,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(21))),
+      builder: (sheet) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Reportar a ${c.counterpart}', style: AppText.h2),
+              const SizedBox(height: 4),
+              const Text('Un moderador revisará tu reporte.', style: AppText.muted),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final r in reportReasons.entries)
+                    AgroChip(
+                      dense: true,
+                      label: r.value,
+                      selected: false,
+                      onTap: () async {
+                        Navigator.of(sheet).pop();
+                        try {
+                          await ref.read(moderationRepositoryProvider).reportUser(id, r.key);
+                          if (mounted) showAgroSnack(context, 'Reporte enviado: ${r.value}', emoji: '🚩');
+                        } on ApiException catch (e) {
+                          if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   static const _pollEvery = Duration(seconds: 4);
 
   final _input = TextEditingController();
@@ -170,7 +222,7 @@ class _ChatHeader extends StatelessWidget {
                     icon: Icons.flag_outlined,
                     background: AppColors.cream,
                     size: 42,
-                    onTap: () => showAgroSnack(context, 'Reporte de conducta: disponible en Fase 6', emoji: '🚩'),
+                    onTap: () => _reportUser(c),
                   ),
                 ],
               ),
