@@ -195,7 +195,7 @@ class ApiListingRepository implements ListingRepository {
       // Laravel serializa los `decimal:2` cast como STRING, no num — de ahí el
       // interpolado antes de parsear en vez de un cast directo.
       price: double.tryParse('${json['price'] ?? 0}') ?? 0,
-      priceType: _priceTypeFromWire(json['price_type'] as String),
+      priceType: priceTypeFromWire(json['price_type'] as String),
       quantity: double.tryParse('${json['quantity']}') ?? 0,
       unit: json['unit'] as String,
       negotiable: json['negotiable'] as bool? ?? false,
@@ -238,15 +238,6 @@ class ApiListingRepository implements ListingRepository {
         PriceType.negotiable => 'fixed', // no existe en el backend; no debería llegar aquí
       };
 
-  PriceType _priceTypeFromWire(String v) => switch (v) {
-        'per_unit' => PriceType.perUnit,
-        'per_kg' => PriceType.perKg,
-        'per_animal' => PriceType.perAnimal,
-        'per_lot' => PriceType.perLot,
-        'quote' => PriceType.quote,
-        _ => PriceType.fixed,
-      };
-
   DocumentStatus _docStatusFromWire(String v) => switch (v) {
         'verified' => DocumentStatus.verified,
         'rejected' => DocumentStatus.rejected,
@@ -255,3 +246,13 @@ class ApiListingRepository implements ListingRepository {
         _ => DocumentStatus.pending,
       };
 }
+
+/// price_type de la API ("per_kg"...) -> PriceType de la app. Compartido con el chat.
+PriceType priceTypeFromWire(String v) => switch (v) {
+      'per_unit' => PriceType.perUnit,
+      'per_kg' => PriceType.perKg,
+      'per_animal' => PriceType.perAnimal,
+      'per_lot' => PriceType.perLot,
+      'quote' => PriceType.quote,
+      _ => PriceType.fixed,
+    };

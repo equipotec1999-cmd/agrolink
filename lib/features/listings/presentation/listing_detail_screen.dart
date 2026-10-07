@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
 import '../../../shared/widgets/product_art.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../chat/application/chat_controller.dart';
-import '../../chat/presentation/offer_sheet.dart';
 import '../application/listing_providers.dart';
 import '../domain/listing.dart';
 import 'widgets/listing_widgets.dart';
@@ -57,18 +58,21 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
   Listing get l => widget.listing;
 
-  void _contact() {
-    final convId = ref.read(chatProvider.notifier).openFor(l);
-    context.push('/chat/$convId');
+  Future<void> _contact() async {
+    if (ref.read(authProvider) == null) {
+      context.push('/login');
+      return;
+    }
+    try {
+      final convId = await ref.read(chatProvider.notifier).openFor(l);
+      if (mounted) context.push('/chat/$convId');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '💬');
+    }
   }
 
-  Future<void> _offer() async {
-    final ctrl = ref.read(chatProvider.notifier);
-    final convId = ctrl.openFor(l);
-    final conv = ctrl.byId(convId)!;
-    final sent = await showOfferSheet(context, conv);
-    if (sent && mounted) context.push('/chat/$convId');
-  }
+  // Las ofertas son el siguiente bloque de la Fase 5 (backend aún sin endpoints).
+  void _offer() => showAgroSnack(context, 'Las ofertas llegan en la siguiente actualización', emoji: '🏷️');
 
   void _report() {
     const reasons = [

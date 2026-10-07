@@ -19,12 +19,17 @@ class InboxScreen extends ConsumerStatefulWidget {
 }
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
-  bool _offersOnly = false;
+  @override
+  void initState() {
+    super.initState();
+    // Al entrar a la pestaña se refresca de inmediato (además del refresco periódico).
+    Future.microtask(() => ref.read(chatProvider.notifier).refresh());
+  }
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(chatProvider);
-    final list = _offersOnly ? all.where((c) => c.hasOffers).toList() : all;
+    final chat = ref.watch(chatProvider);
+    final list = chat.conversations;
 
     return Scaffold(
       body: SafeArea(
@@ -40,24 +45,26 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text('Cada conversación está ligada a una publicación.', style: AppText.muted),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Row(
-                children: [
-                  AgroChip(label: 'Todos', selected: !_offersOnly, dense: true, onTap: () => setState(() => _offersOnly = false)),
-                  const SizedBox(width: 8),
-                  AgroChip(label: 'Con ofertas', emoji: '🏷️', selected: _offersOnly, dense: true, onTap: () => setState(() => _offersOnly = true)),
-                ],
-              ),
-            ),
+            const SizedBox(height: 12),
             Expanded(
-              child: list.isEmpty
+              child: list.isEmpty && chat.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : list.isEmpty && chat.error != null
+                      ? EmptyState(
+                          icon: Icons.wifi_off_rounded,
+                          title: 'No pudimos cargar tus mensajes',
+                          message: chat.error!,
+                        )
+                      : list.isEmpty
                   ? const EmptyState(
                       icon: Icons.chat_bubble_outline_rounded,
                       title: 'Sin conversaciones',
                       message: 'Cuando contactes a un vendedor, la plática aparecerá aquí.',
                     )
-                  : ListView.separated(
+                  : RefreshIndicator(
+                      onRefresh: () => ref.read(chatProvider.notifier).refresh(),
+                      child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 130),
                       itemCount: list.length,
                       separatorBuilder: (context, i) => const SizedBox(height: 10),
@@ -65,6 +72,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                         delay: Duration(milliseconds: 50 * i),
                         child: _ConversationTile(conversation: list[i]),
                       ),
+                    ),
                     ),
             ),
           ],
@@ -78,17 +86,10 @@ class _ConversationTile extends StatelessWidget {
   const _ConversationTile({required this.conversation});
   final Conversation conversation;
 
-  String _preview(ChatMessage m) {
-    if (m.offer != null) {
-      return '${m.mine ? 'Tú' : 'Vendedor'}: oferta ${formatMoney(m.offer!.amount)} · ${m.offer!.status.label}';
-    }
-    return m.text ?? '';
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = conversation;
-    final last = c.messages.isEmpty ? null : c.messages.last;
+    final lastAt = c.lastAt;
     return Pressable(
       scale: 0.98,
       onTap: () => context.push('/chat/${c.id}'),
@@ -100,7 +101,7 @@ class _ConversationTile extends StatelessWidget {
             SizedBox(
               width: 60,
               height: 60,
-              child: ProductArt(emoji: c.listingEmoji, colorKey: c.listingColorKey, radius: 18, emojiSize: 30),
+              child: ProductArt(emoji: c.listingEmoji, colorKey: c.listingColorKey, imageUrl: c.listingCoverUrl, radius: 18, emojiSize: 30),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -110,7 +111,7 @@ class _ConversationTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(child: Text(c.counterpart, style: AppText.title, overflow: TextOverflow.ellipsis)),
-                      if (last != null) Text(timeAgo(last.at), style: AppText.muted.copyWith(fontSize: 11)),
+                      if (lastAt != null) Text(timeAgo(lastAt), style: AppText.muted.copyWith(fontSize: 11)),
                     ],
                   ),
                   Text(
@@ -124,7 +125,7 @@ class _ConversationTile extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          c.typing ? 'escribiendo…' : (last == null ? 'Nueva conversación' : _preview(last)),
+                          c.lastText == null ? 'Nueva conversación' : '${c.lastMine ? 'Tú: ' : ''}${c.lastText}',
                           style: AppText.muted.copyWith(
                             fontSize: 12.5,
                             color: c.unread > 0 ? AppColors.ink : AppColors.muted,

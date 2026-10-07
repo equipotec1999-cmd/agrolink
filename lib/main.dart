@@ -13,6 +13,7 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/catalog/data/api_catalog_repository.dart';
 import 'features/catalog/data/catalog_repository.dart';
 import 'features/catalog/domain/catalog.dart';
+import 'features/chat/data/chat_repository.dart';
 import 'features/favorites/data/favorites_repository.dart';
 import 'features/listings/data/api_listing_repository.dart';
 import 'features/listings/data/listing_repository.dart';
@@ -59,6 +60,11 @@ Future<void> main() async {
           initialAuthUserProvider.overrideWithValue(restoredUser),
           listingRepositoryProvider.overrideWithValue(listingRepository),
           favoritesRepositoryProvider.overrideWithValue(ApiFavoritesRepository(apiClient)),
+          // "Mis" mensajes se decide con el usuario de la sesión actual, que cambia
+          // al hacer login/logout; por eso se lee del provider en cada llamada.
+          chatRepositoryProvider.overrideWith(
+            (ref) => ApiChatRepository(apiClient, catalog, myId: () => ref.read(authProvider)!.id),
+          ),
         ],
         child: const AgroLinkApp(),
       ),

@@ -1,193 +1,186 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../catalog/domain/catalog.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../listings/domain/listing.dart';
+import '../data/chat_repository.dart';
 import '../domain/chat.dart';
 
-/// ⚠️ MOCK: conversación simulada en memoria con respuestas automáticas del vendedor.
-/// Fase 5: ChatRepository (REST para historial + WebSockets/Laravel Reverb en tiempo real).
-class ChatController extends Notifier<List<Conversation>> {
-  int _seq = 100;
-  String _id() => 'm${_seq++}';
+class ChatState {
+  const ChatState({this.conversations = const [], this.loading = false, this.error});
+
+  final List<Conversation> conversations;
+
+  /// Primera carga de la bandeja en curso (los refrescos en segundo plano no la activan).
+  final bool loading;
+
+  /// Mensaje de error de la bandeja; solo se muestra si no hay nada que enseñar.
+  final String? error;
+
+  ChatState copyWith({List<Conversation>? conversations, bool? loading, Object? error = _keep}) => ChatState(
+        conversations: conversations ?? this.conversations,
+        loading: loading ?? this.loading,
+        error: identical(error, _keep) ? this.error : error as String?,
+      );
+
+  static const _keep = Object();
+}
+
+/// Chat contra la API con polling (sin WebSockets por ahora: no cuestan nada y
+/// funcionan en Render gratis). La bandeja se refresca cada 15 s mientras hay
+/// sesión; la pantalla de una conversación pide mensajes nuevos cada pocos segundos.
+class ChatController extends Notifier<ChatState> {
+  static const _inboxEvery = Duration(seconds: 15);
+
+  int _tmp = 0;
+  String? _openId;
 
   @override
-  List<Conversation> build() {
-    final now = DateTime.now();
-    return [
-      Conversation(
-        id: 'c1',
-        listingId: 'l4',
-        listingTitle: 'Miel multifloral de tajonal — mayoreo',
-        listingEmoji: '🍯',
-        listingColorKey: 'apicultura',
-        listingPrice: 78,
-        priceSuffix: '/kg',
-        counterpart: 'Apiarios Kaab',
-        unread: 2,
-        messages: [
-          ChatMessage(id: 'm1', mine: true, at: now.subtract(const Duration(hours: 3)), text: 'Buen día, ¿la miel se puede ver antes de comprar?'),
-          ChatMessage(id: 'm2', mine: false, at: now.subtract(const Duration(hours: 2)), text: '¡Claro! Tenemos muestra y el análisis del lote AK-2604.'),
-          ChatMessage(id: 'm3', mine: false, at: now.subtract(const Duration(minutes: 50)), text: 'Si se lleva más de 500 kg le hacemos precio especial.'),
-        ],
-      ),
-      Conversation(
-        id: 'c2',
-        listingId: 'l3',
-        listingTitle: 'Borregos Pelibuey de engorda',
-        listingEmoji: '🐑',
-        listingColorKey: 'animales',
-        listingPrice: 2800,
-        priceSuffix: '/animal',
-        counterpart: 'Marisol Chan',
-        unread: 1,
-        messages: [
-          ChatMessage(
-            id: 'm4',
-            mine: true,
-            at: now.subtract(const Duration(days: 1, hours: 2)),
-            offer: const Offer(id: 'o1', amount: 2400, quantity: 10, status: OfferStatus.countered),
-          ),
-          ChatMessage(
-            id: 'm5',
-            mine: false,
-            at: now.subtract(const Duration(days: 1)),
-            offer: const Offer(id: 'o2', amount: 2650, quantity: 10, status: OfferStatus.sent),
-          ),
-        ],
-      ),
-    ];
+  ChatState build() {
+    final user = ref.watch(authProvider);
+    if (user == null) return const ChatState();
+
+    final timer = Timer.periodic(_inboxEvery, (_) => refresh());
+    ref.onDispose(timer.cancel);
+    Future.microtask(() => refresh(initial: true));
+    return const ChatState(loading: true);
   }
 
   Conversation? byId(String id) {
-    for (final c in state) {
+    for (final c in state.conversations) {
       if (c.id == id) return c;
     }
     return null;
   }
 
   void _update(String id, Conversation Function(Conversation c) fn) {
-    state = [for (final c in state) c.id == id ? fn(c) : c];
+    if (!ref.mounted) return;
+    state = state.copyWith(conversations: [for (final c in state.conversations) c.id == id ? fn(c) : c]);
   }
 
-  void _append(String id, ChatMessage m) =>
-      _update(id, (c) => c.copyWith(messages: [...c.messages, m]));
+  /// Marca qué conversación está abierta en pantalla: sus mensajes se leen al
+  /// llegar, así que su contador de no leídos no debe volver a subir.
+  void setOpen(String? id) => _openId = id;
 
-  /// Abre (o crea) la conversación ligada a una publicación.
-  String openFor(Listing l) {
-    for (final c in state) {
-      if (c.listingId == l.id) return c.id;
-    }
-    final c = Conversation(
-      id: 'c${_seq++}',
-      listingId: l.id,
-      listingTitle: l.title,
-      // placeholderEmoji, no `cover`: con datos reales `cover` es la URL de la
-      // foto y la miniatura del chat la dibujaría como texto.
-      listingEmoji: l.placeholderEmoji,
-      listingColorKey: l.categoryId,
-      listingPrice: l.price,
-      priceSuffix: l.priceType.suffix,
-      counterpart: l.seller.name,
-      messages: const [],
-    );
-    state = [c, ...state];
-    return c.id;
-  }
-
-  void markRead(String id) => _update(id, (c) => c.copyWith(unread: 0));
-
-  Future<void> sendText(String convId, String text) async {
-    _append(convId, ChatMessage(id: _id(), mine: true, at: DateTime.now(), text: text));
-    await _sellerTyping(convId);
-    _append(
-      convId,
-      ChatMessage(
-        id: _id(),
-        mine: false,
-        at: DateTime.now(),
-        text: 'Gracias por escribir 🙌 Le confirmo disponibilidad en un momento.',
-      ),
-    );
-  }
-
-  Future<void> sendOffer(String convId, double amount, double quantity) async {
-    _append(
-      convId,
-      ChatMessage(
-        id: _id(),
-        mine: true,
-        at: DateTime.now(),
-        offer: Offer(id: _id(), amount: amount, quantity: quantity, status: OfferStatus.sent),
-      ),
-    );
-    await _sellerTyping(convId);
-
-    // El vendedor (simulado) responde con contraoferta a mitad de camino.
-    final c = byId(convId);
-    if (c == null) return;
-    final counter = ((amount + c.listingPrice) / 2 / 10).round() * 10.0;
-    _setLastOpenOffer(convId, mine: true, status: OfferStatus.countered);
-    _append(
-      convId,
-      ChatMessage(
-        id: _id(),
-        mine: false,
-        at: DateTime.now(),
-        offer: Offer(id: _id(), amount: counter, quantity: quantity, status: OfferStatus.sent),
-      ),
-    );
-  }
-
-  void respond(String convId, String messageId, OfferStatus status) {
-    _update(convId, (c) {
-      final msgs = [
-        for (final m in c.messages)
-          m.id == messageId && m.offer != null ? m.withOffer(m.offer!.copyWith(status: status)) : m,
-      ];
-      return c.copyWith(messages: msgs);
-    });
-    if (status == OfferStatus.accepted) {
-      _append(
-        convId,
-        ChatMessage(
-          id: _id(),
-          mine: false,
-          system: true,
-          at: DateTime.now(),
-          text: 'Oferta aceptada · Se creó la operación #OP-${1000 + _seq} (OFERTA_ACEPTADA)',
-        ),
+  /// Baja la bandeja. Conserva los mensajes ya cargados de cada conversación.
+  Future<void> refresh({bool initial = false}) async {
+    if (ref.read(authProvider) == null) return;
+    if (initial && ref.mounted) state = state.copyWith(loading: true, error: null);
+    try {
+      final fresh = await ref.read(chatRepositoryProvider).conversations();
+      if (!ref.mounted) return;
+      final old = {for (final c in state.conversations) c.id: c};
+      state = ChatState(
+        conversations: [
+          for (final c in fresh)
+            old[c.id] == null
+                ? c
+                : c.copyWith(
+                    messages: old[c.id]!.messages,
+                    messagesLoaded: old[c.id]!.messagesLoaded,
+                    unread: c.id == _openId ? 0 : c.unread,
+                  ),
+        ],
       );
+    } catch (e) {
+      if (ref.mounted) state = state.copyWith(loading: false, error: '$e');
     }
   }
 
-  void _setLastOpenOffer(String convId, {required bool mine, required OfferStatus status}) {
-    _update(convId, (c) {
-      final idx = c.messages.lastIndexWhere((m) => m.mine == mine && (m.offer?.status.isOpen ?? false));
-      if (idx < 0) return c;
-      final msgs = [...c.messages];
-      msgs[idx] = msgs[idx].withOffer(msgs[idx].offer!.copyWith(status: status));
-      return c.copyWith(messages: msgs);
-    });
+  /// Abre (o crea) la conversación ligada a una publicación. Lanza ApiException
+  /// si el servidor la rechaza (p. ej. es tu propia publicación).
+  Future<String> openFor(Listing l) async {
+    final conv = await ref.read(chatRepositoryProvider).open(l.id);
+    if (ref.mounted && byId(conv.id) == null) {
+      state = state.copyWith(conversations: [conv, ...state.conversations]);
+    }
+    return conv.id;
   }
 
-  Future<void> _sellerTyping(String convId) async {
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    _update(convId, (c) => c.copyWith(typing: true));
-    await Future<void>.delayed(const Duration(milliseconds: 1600));
-    _update(convId, (c) => c.copyWith(typing: false));
+  /// Descarga mensajes: todos en la primera carga, solo los nuevos después (`after_id`).
+  /// Devuelve false si falló (la pantalla decide si lo muestra; el polling lo ignora).
+  Future<bool> loadMessages(String id) async {
+    final conv = byId(id);
+    if (conv == null) return false;
+    try {
+      final incoming = await ref.read(chatRepositoryProvider).messages(id, afterId: conv.lastServerId);
+      if (!ref.mounted) return false;
+      _update(id, (c) {
+        final known = {for (final m in c.messages) m.id};
+        final merged = [
+          ...c.messages.where((m) => !m.isLocal),
+          ...incoming.where((m) => !known.contains(m.id)),
+        ]..sort((a, b) => (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0));
+        // Los pendientes/fallidos siguen al final hasta que el servidor responda.
+        final local = c.messages.where((m) => m.isLocal);
+        return c.copyWith(messages: [...merged, ...local], messagesLoaded: true, unread: 0);
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Envío optimista: el mensaje aparece al instante como pendiente y se reemplaza
+  /// por el del servidor; si falla queda marcado para reintentar.
+  Future<void> sendText(String convId, String text) async {
+    final conv = byId(convId);
+    if (conv == null) return;
+    final tmpId = 'tmp-${_tmp++}';
+    final local = ChatMessage(id: tmpId, mine: true, at: DateTime.now(), text: text, pending: true);
+    _update(convId, (c) => c.copyWith(
+          messages: [...c.messages, local],
+          lastText: text,
+          lastMine: true,
+          lastAt: local.at,
+        ));
+    await _deliver(convId, tmpId, text);
+  }
+
+  Future<void> retry(String convId, String tmpId) async {
+    final msg = byId(convId)?.messages.where((m) => m.id == tmpId).firstOrNull;
+    if (msg == null) return;
+    _update(convId, (c) => c.copyWith(
+          messages: [for (final m in c.messages) m.id == tmpId ? m.copyWith(pending: true, failed: false) : m],
+        ));
+    await _deliver(convId, tmpId, msg.text);
+  }
+
+  Future<void> _deliver(String convId, String tmpId, String text) async {
+    try {
+      final sent = await ref.read(chatRepositoryProvider).send(convId, text);
+      _update(convId, (c) {
+        // El polling pudo traer ya este mensaje antes de que llegara la respuesta del POST.
+        final alreadyThere = c.messages.any((m) => m.id == sent.id);
+        final rest = c.messages.where((m) => m.id != tmpId);
+        return c.copyWith(messages: [...rest, if (!alreadyThere) sent]
+          ..sort(_byServerOrder));
+      });
+    } catch (_) {
+      _update(convId, (c) => c.copyWith(
+            messages: [for (final m in c.messages) m.id == tmpId ? m.copyWith(pending: false, failed: true) : m],
+          ));
+    }
+  }
+
+  /// Confirmados por id; los locales (aún sin id de servidor) siempre al final.
+  static int _byServerOrder(ChatMessage a, ChatMessage b) {
+    if (a.isLocal != b.isLocal) return a.isLocal ? 1 : -1;
+    if (a.isLocal) return 0;
+    return (int.tryParse(a.id) ?? 0).compareTo(int.tryParse(b.id) ?? 0);
   }
 }
 
-final chatProvider = NotifierProvider<ChatController, List<Conversation>>(ChatController.new);
+final chatProvider = NotifierProvider<ChatController, ChatState>(ChatController.new);
 
 final conversationProvider = Provider.family<Conversation?, String>((ref, id) {
-  final list = ref.watch(chatProvider);
-  for (final c in list) {
+  for (final c in ref.watch(chatProvider).conversations) {
     if (c.id == id) return c;
   }
   return null;
 });
 
 final unreadCountProvider = Provider<int>(
-  (ref) => ref.watch(chatProvider).fold(0, (sum, c) => sum + c.unread),
+  (ref) => ref.watch(chatProvider).conversations.fold(0, (sum, c) => sum + c.unread),
 );
