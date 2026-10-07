@@ -203,7 +203,7 @@ class _ReportsTab extends ConsumerWidget {
                     leading: const Center(child: Text('🚩', style: TextStyle(fontSize: 26))),
                     title: r.reasonLabel,
                     lines: [
-                      '«${r.listingTitle}» · ${r.seller}',
+                      r.isUserReport ? 'Usuario: ${r.userName ?? ''}' : '«${r.listingTitle}» · ${r.seller}',
                       if (r.listingStatus.isNotEmpty && r.listingStatus != 'publicada') 'Estado: ${r.listingStatus}',
                       if (r.description != null && r.description!.isNotEmpty) r.description!,
                       'Reportó: ${r.reporter}',
@@ -219,12 +219,19 @@ class _ReportsTab extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: AgroButton(
-                          label: 'Suspender',
-                          tone: ButtonTone.lime,
-                          height: 44,
-                          onTap: () => resolve(r, ReportAction.hideListing, askNote: true),
-                        ),
+                        child: r.isUserReport
+                            ? AgroButton(
+                                label: 'Atendido',
+                                tone: ButtonTone.lime,
+                                height: 44,
+                                onTap: () => resolve(r, ReportAction.resolve, askNote: true),
+                              )
+                            : AgroButton(
+                                label: 'Suspender',
+                                tone: ButtonTone.lime,
+                                height: 44,
+                                onTap: () => resolve(r, ReportAction.hideListing, askNote: true),
+                              ),
                       ),
                     ],
                   );

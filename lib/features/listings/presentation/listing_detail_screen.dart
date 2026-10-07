@@ -90,7 +90,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     }
   }
 
-  void _report() {
+  void _report({bool user = false}) {
     if (ref.read(authProvider) == null) {
       context.push('/login');
       return;
@@ -106,7 +106,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Reportar publicación', style: AppText.h2),
+              Text(user ? 'Reportar vendedor' : 'Reportar publicación', style: AppText.h2),
               const SizedBox(height: 4),
               const Text('Un moderador revisará tu reporte.', style: AppText.muted),
               const SizedBox(height: 16),
@@ -121,7 +121,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       selected: false,
                       onTap: () {
                         Navigator.of(sheet).pop();
-                        _sendReport(r.key, r.value);
+                        _sendReport(r.key, r.value, user: user);
                       },
                     ),
                 ],
@@ -133,9 +133,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     );
   }
 
-  Future<void> _sendReport(String reason, String label) async {
+  Future<void> _sendReport(String reason, String label, {bool user = false}) async {
     try {
-      await ref.read(moderationRepositoryProvider).reportListing(l.id, reason);
+      final repo = ref.read(moderationRepositoryProvider);
+      if (user) {
+        await repo.reportUser(l.seller.id, reason);
+      } else {
+        await repo.reportListing(l.id, reason);
+      }
       if (mounted) showAgroSnack(context, 'Reporte enviado: $label', emoji: '🚩');
     } on ApiException catch (e) {
       if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
@@ -293,10 +298,20 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                         _SellerCard(seller: l.seller),
                         const SizedBox(height: 18),
                         Center(
-                          child: TextButton.icon(
-                            onPressed: _report,
-                            icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.muted),
-                            label: Text('Reportar publicación', style: AppText.label.copyWith(color: AppColors.muted)),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            children: [
+                              TextButton.icon(
+                                onPressed: _report,
+                                icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.muted),
+                                label: Text('Reportar publicación', style: AppText.label.copyWith(color: AppColors.muted)),
+                              ),
+                              TextButton.icon(
+                                onPressed: () => _report(user: true),
+                                icon: const Icon(Icons.person_off_outlined, size: 18, color: AppColors.muted),
+                                label: Text('Reportar vendedor', style: AppText.label.copyWith(color: AppColors.muted)),
+                              ),
+                            ],
                           ),
                         ),
                       ],

@@ -45,9 +45,14 @@ class ReportItem {
     required this.listingStatus,
     required this.seller,
     this.description,
+    this.userId,
+    this.userName,
   });
 
   final String id;
+  final String? userId; // si el reporte es de un usuario (no de una publicación)
+  final String? userName;
+  bool get isUserReport => userId != null;
   final String reason; // valor del backend
   final String? description;
   final String reporter;
@@ -71,6 +76,9 @@ enum ReportAction {
 abstract interface class ModerationRepository {
   /// Cualquier usuario con sesión: reportar una publicación.
   Future<void> reportListing(String listingId, String reason, {String? description});
+
+  /// Cualquier usuario con sesión: reportar a otro usuario (p. ej. un vendedor).
+  Future<void> reportUser(String userId, String reason, {String? description});
 
   Future<List<QueueItem>> queue();
   Future<void> approve(String listingId);
@@ -100,6 +108,14 @@ class ApiModerationRepository implements ModerationRepository {
   @override
   Future<void> reportListing(String listingId, String reason, {String? description}) async {
     await _client.post('/listings/$listingId/report', body: {
+      'reason': reason,
+      if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
+    });
+  }
+
+  @override
+  Future<void> reportUser(String userId, String reason, {String? description}) async {
+    await _client.post('/users/$userId/report', body: {
       'reason': reason,
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
     });
@@ -142,13 +158,16 @@ class ApiModerationRepository implements ModerationRepository {
     return (response['data'] as List<dynamic>).map((raw) {
       final json = raw as Map<String, dynamic>;
       final listing = json['listing'] as Map<String, dynamic>?;
+      final user = json['user'] as Map<String, dynamic>?;
       return ReportItem(
+        userId: user == null ? null : '${user['id']}',
+        userName: user?['name'] as String?,
         id: '${json['id']}',
         reason: '${json['reason']}',
         description: json['description'] as String?,
         reporter: json['reporter_name'] as String? ?? '',
         listingId: listing == null ? null : '${listing['id']}',
-        listingTitle: listing?['title'] as String? ?? '(publicación eliminada)',
+        listingTitle: listing?['title'] as String? ?? (user != null ? '' : '(publicación eliminada)'),
         listingStatus: listing?['status'] as String? ?? '',
         seller: listing?['seller_name'] as String? ?? '',
       );
