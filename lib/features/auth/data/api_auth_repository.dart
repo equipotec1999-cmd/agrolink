@@ -50,26 +50,25 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> register(String name, String password, UserIntent intent,
-      {String? email, String? phone, String? lastname, String channel = 'email'}) async {
+  Future<void> register(String name, String email, String password, UserIntent intent,
+      {String? phone, String? lastname}) async {
     final json = await _client.post(
       '/register',
       withAuth: false,
       body: {
         'name': name,
         if (lastname != null && lastname.trim().isNotEmpty) 'lastname': lastname.trim(),
-        if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+        'email': email.trim(),
         if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
         'password': password,
         'password_confirmation': password,
-        'verify_channel': channel,
       },
     );
     // Siempre se requiere confirmación por el canal elegido.
     final v = (json['verification'] as Map<String, dynamic>?) ?? const {};
     throw ContactVerificationRequired(
-      channel: v['channel'] as String? ?? channel,
-      destination: v['destination'] as String? ?? (email ?? phone ?? ''),
+      channel: 'email',
+      destination: v['destination'] as String? ?? email.trim(),
     );
   }
 

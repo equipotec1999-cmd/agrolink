@@ -93,7 +93,6 @@ class _VerifyContactScreenState extends ConsumerState<VerifyContactScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isSms = widget.channel == 'sms';
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -108,16 +107,14 @@ class _VerifyContactScreenState extends ConsumerState<VerifyContactScreen> {
               FadeSlideIn(
                 delay: const Duration(milliseconds: 60),
                 child: Text(
-                  isSms
-                      ? 'Te mandamos un código de 6 dígitos por SMS a ${widget.destination}.'
-                      : 'Te mandamos un código de 6 dígitos al correo ${widget.destination}.',
+                  'Te mandamos un código de 6 dígitos al correo ${widget.destination}. Revisa también la carpeta de spam.',
                   style: AppText.muted,
                 ),
               ),
               const SizedBox(height: 28),
               AgroTextField(
                 label: 'Código',
-                icon: isSms ? Icons.sms_outlined : Icons.email_outlined,
+                icon: Icons.email_outlined,
                 hint: '______',
                 controller: _code,
                 keyboardType: TextInputType.number,

@@ -26,8 +26,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _phone = TextEditingController();
   final _password = TextEditingController();
   UserIntent _intent = UserIntent.both;
-  // Canal preferido para recibir el código de confirmación.
-  String _channel = 'email';
   bool _terms = false;
   bool _loading = false;
 
@@ -49,29 +47,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     final email = _email.text.trim();
     final phone = _phone.text.trim();
-    if (email.isEmpty && phone.isEmpty) {
-      showAgroSnack(context, 'Necesitamos un correo o un teléfono', emoji: '⚠️');
-      return;
-    }
-    if (_channel == 'email' && email.isEmpty) {
-      showAgroSnack(context, 'Para recibir el código por correo, escribe uno', emoji: '⚠️');
-      return;
-    }
-    if (_channel == 'sms' && phone.isEmpty) {
-      showAgroSnack(context, 'Para recibir el código por SMS, escribe tu teléfono', emoji: '⚠️');
-      return;
-    }
 
     setState(() => _loading = true);
     try {
       await ref.read(authProvider.notifier).register(
             _name.text.trim(),
+            email,
             _password.text,
             _intent,
-            email: email.isEmpty ? null : email,
             phone: phone.isEmpty ? null : phone,
             lastname: _lastname.text.trim().isEmpty ? null : _lastname.text.trim(),
-            channel: _channel,
           );
       // Nunca llega aquí: register siempre lanza ContactVerificationRequired.
       if (!mounted) return;
@@ -147,47 +132,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                 ]),
-                const SizedBox(height: 20),
-                const Text('¿Dónde te mandamos el código?', style: AppText.label),
-                const SizedBox(height: 6),
-                Text(
-                  'Elige por dónde confirmar la cuenta. Te mandaremos un código de 6 dígitos.',
-                  style: AppText.muted.copyWith(fontSize: 12),
-                ),
-                const SizedBox(height: 10),
-                Row(children: [
-                  Expanded(
-                    child: _IntentCard(
-                      emoji: '📧',
-                      label: 'Correo',
-                      selected: _channel == 'email',
-                      onTap: () => setState(() => _channel = 'email'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _IntentCard(
-                      emoji: '📱',
-                      label: 'Teléfono',
-                      selected: _channel == 'sms',
-                      onTap: () => setState(() => _channel = 'sms'),
-                    ),
-                  ),
-                ]),
                 const SizedBox(height: 16),
                 AgroTextField(
                   label: 'Correo electrónico',
                   icon: Icons.alternate_email_rounded,
-                  hint: _channel == 'email' ? 'tu@correo.com' : 'Opcional',
+                  hint: 'tu@correo.com',
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? null : Validators.email(v),
+                  validator: Validators.email,
                 ),
                 const SizedBox(height: 16),
                 AgroTextField(
                   label: 'Teléfono',
                   icon: Icons.phone_outlined,
-                  hint: _channel == 'sms' ? '+52 999 123 4567' : 'Opcional',
+                  hint: 'Opcional',
                   controller: _phone,
                   keyboardType: TextInputType.phone,
                   validator: (v) => (v == null || v.trim().isEmpty) ? null : Validators.phone(v),

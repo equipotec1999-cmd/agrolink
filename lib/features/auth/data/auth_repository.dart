@@ -25,12 +25,12 @@ abstract interface class AuthRepository {
   /// Lanza [TwoFactorRequired] si la cuenta tiene verificación en dos pasos.
   Future<AppUser> login(String email, String password);
   Future<AppUser> completeTwoFactor(String challengeToken, {String? code, String? recoveryCode});
-  /// Registra una cuenta. Lanza [ContactVerificationRequired] con el canal (email|sms)
-  /// y el destino al que se mandó el código. El token completo llega en [verifyContact].
-  Future<void> register(String name, String password, UserIntent intent,
-      {String? email, String? phone, String? lastname, String channel = 'email'});
+  /// Registra una cuenta. Lanza [ContactVerificationRequired] con el correo
+  /// al que se mandó el código. El token completo llega en [verifyContact].
+  Future<void> register(String name, String email, String password, UserIntent intent,
+      {String? phone, String? lastname});
 
-  /// Confirma el código enviado al correo/teléfono y devuelve el usuario con sesión.
+  /// Confirma el código enviado al correo y devuelve el usuario con sesión.
   Future<AppUser> verifyContact({required String destination, required String code});
 
   Future<void> resendVerification(String destination);

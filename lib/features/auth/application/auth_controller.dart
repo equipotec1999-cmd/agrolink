@@ -97,21 +97,19 @@ class AuthController extends Notifier<AppUser?> {
   /// la pantalla de confirmación con el código recibido por correo o SMS.
   Future<void> register(
     String name,
+    String email,
     String password,
     UserIntent intent, {
-    String? email,
     String? phone,
     String? lastname,
-    String channel = 'email',
   }) async {
     await ref.read(authRepositoryProvider).register(
           name,
+          email,
           password,
           intent,
-          email: email,
           phone: phone,
           lastname: lastname,
-          channel: channel,
         );
   }
 
