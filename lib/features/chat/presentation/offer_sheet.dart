@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -33,9 +34,25 @@ class _OfferSheet extends ConsumerStatefulWidget {
 }
 
 class _OfferSheetState extends ConsumerState<_OfferSheet> {
-  late double _amount = (widget.conversation.listingPrice * 0.92 / 10).round() * 10.0;
-  double _qty = 1;
+  // Precio y cantidad se pueden escribir a mano o ajustar con los botones.
+  late final _amountCtrl = TextEditingController(text: _fmt((widget.conversation.listingPrice * 0.92 / 10).round() * 10.0));
+  final _qtyCtrl = TextEditingController(text: '1');
   bool _sending = false;
+
+  static String _fmt(double v) => v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+
+  double get _amount => double.tryParse(_amountCtrl.text.replaceAll(',', '')) ?? 0;
+  double get _qty => double.tryParse(_qtyCtrl.text.replaceAll(',', '')) ?? 0;
+
+  void _setAmount(double v) => setState(() => _amountCtrl.text = _fmt(v));
+  void _setQty(double v) => setState(() => _qtyCtrl.text = _fmt(v));
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _qtyCtrl.dispose();
+    super.dispose();
+  }
 
   double get _list => widget.conversation.listingPrice;
 
@@ -97,23 +114,22 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _StepButton(icon: Icons.remove_rounded, onTap: () => setState(() => _amount = _bound(_amount - step, step))),
+              _StepButton(icon: Icons.remove_rounded, onTap: () => _setAmount(_bound(_amount - step, step))),
               Expanded(
                 child: Column(
                   children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      transitionBuilder: (child, a) => FadeTransition(
-                        opacity: a,
-                        child: SlideTransition(
-                          position: Tween(begin: const Offset(0, 0.25), end: Offset.zero).animate(a),
-                          child: child,
-                        ),
-                      ),
-                      child: Text(
-                        formatMoney(_amount),
-                        key: ValueKey(_amount),
-                        style: AppText.price.copyWith(fontSize: 38),
+                    TextField(
+                      controller: _amountCtrl,
+                      onChanged: (_) => setState(() {}),
+                      textAlign: TextAlign.center,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      style: AppText.price.copyWith(fontSize: 38),
+                      decoration: const InputDecoration(
+                        prefixText: '\$ ',
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: '0',
                       ),
                     ),
                     Text(
@@ -123,7 +139,7 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
                   ],
                 ),
               ),
-              _StepButton(icon: Icons.add_rounded, onTap: () => setState(() => _amount = _bound(_amount + step, step))),
+              _StepButton(icon: Icons.add_rounded, onTap: () => _setAmount(_bound(_amount + step, step))),
             ],
           ),
           const SizedBox(height: 16),
@@ -135,7 +151,7 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
                   dense: true,
                   label: '-$pct%',
                   selected: discount == pct,
-                  onTap: () => setState(() => _amount = (_list * (100 - pct) / 100 / step).round() * step),
+                  onTap: () => _setAmount((_list * (100 - pct) / 100 / step).round() * step),
                 ),
             ],
           ),
@@ -143,12 +159,20 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
           Row(
             children: [
               const Expanded(child: Text('Cantidad', style: AppText.title)),
-              _StepButton(icon: Icons.remove_rounded, small: true, onTap: () => setState(() => _qty = _qty > 1 ? _qty - 1 : 1)),
+              _StepButton(icon: Icons.remove_rounded, small: true, onTap: () => _setQty(_qty > 1 ? _qty - 1 : 1)),
               SizedBox(
-                width: 54,
-                child: Text(_qty.toStringAsFixed(0), textAlign: TextAlign.center, style: AppText.h3),
+                width: 80,
+                child: TextField(
+                  controller: _qtyCtrl,
+                  onChanged: (_) => setState(() {}),
+                  textAlign: TextAlign.center,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  style: AppText.h3,
+                  decoration: const InputDecoration(isDense: true, border: InputBorder.none, hintText: '1'),
+                ),
               ),
-              _StepButton(icon: Icons.add_rounded, small: true, onTap: () => setState(() => _qty += 1)),
+              _StepButton(icon: Icons.add_rounded, small: true, onTap: () => _setQty(_qty + 1)),
             ],
           ),
           const SizedBox(height: 8),
@@ -161,7 +185,7 @@ class _OfferSheetState extends ConsumerState<_OfferSheet> {
             label: _sending ? 'Enviando…' : 'Enviar oferta',
             icon: Icons.local_offer_rounded,
             tone: ButtonTone.lime,
-            onTap: _sending ? null : () => _send(c.id),
+            onTap: (_sending || _amount <= 0 || _qty <= 0) ? null : () => _send(c.id),
           ),
         ],
       ),

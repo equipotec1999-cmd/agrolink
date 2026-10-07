@@ -12,6 +12,8 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/listings/presentation/create_listing_screen.dart';
 import '../../features/listings/presentation/listing_detail_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
+import '../../features/operations/domain/operation.dart';
+import '../../features/operations/presentation/operations_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
 import '../../shared/widgets/app_shell.dart';
@@ -80,6 +82,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/chat/:id',
         builder: (context, state) => ChatScreen(conversationId: state.pathParameters['id']!),
       ),
+      GoRoute(path: '/purchases', builder: (context, state) => const OperationsScreen(role: OperationRole.buyer)),
+      GoRoute(path: '/sales', builder: (context, state) => const OperationsScreen(role: OperationRole.seller)),
       GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
       GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
     ],
