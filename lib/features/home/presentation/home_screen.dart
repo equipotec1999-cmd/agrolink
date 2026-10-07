@@ -10,6 +10,7 @@ import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/agrolink_logo.dart';
 import '../../../shared/widgets/category_glyphs.dart';
 import '../../../shared/widgets/motion.dart';
+import '../../notifications/application/notifications_controller.dart';
 import '../../../shared/widgets/product_art.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
@@ -215,12 +216,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header({required this.name});
   final String name;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unread = ref.watch(notificationsProvider).unread;
     return Row(
       children: [
         const AgroLinkMark(size: 44),
@@ -249,7 +251,7 @@ class _Header extends StatelessWidget {
         const SizedBox(width: 10),
         CircleIconButton(
           icon: Icons.notifications_none_rounded,
-          badge: true,
+          badge: unread > 0,
           onTap: () => context.push('/notifications'),
         ),
       ],
