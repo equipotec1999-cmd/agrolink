@@ -420,7 +420,7 @@ void showAgroSnack(BuildContext context, String message, {String emoji = '🌱'}
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 110),
         content: Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
+            CategoryGlyph(value: glyphKeyForEmoji(emoji), size: 20, color: AppColors.bone),
             const SizedBox(width: 10),
             Expanded(child: Text(message, style: AppText.bodyStrong.copyWith(color: AppColors.bone))),
           ],

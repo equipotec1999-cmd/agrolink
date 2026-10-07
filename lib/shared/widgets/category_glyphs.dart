@@ -11,7 +11,20 @@ const _glyphAssets = {
   'cow': 'cow', 'horse': 'horse', 'sheep': 'sheep', 'goat': 'goat', 'pig': 'pig', // animales
   'hive': 'hive', 'bee': 'comb', 'crown': 'crown', 'honey': 'honey', // apicultura
   'chili': 'chili', 'fruit': 'fruit', 'leaf': 'leaf', 'sprout': 'sprout', // agricultura
+  // Símbolos de interfaz (avisos cortos).
+  'warning': 'warning', 'done': 'done', 'sent': 'sent', 'copied': 'copied',
+  'saved': 'saved', 'timeout': 'timeout', 'unlocked': 'unlocked', 'soon': 'soon',
 };
+
+/// Emoji que se usaban en los avisos -> símbolo de la marca que los reemplaza.
+/// Los emoji que no estén aquí se siguen mostrando tal cual.
+const _emojiToGlyph = {
+  '⚠️': 'warning', '✅': 'done', '📬': 'sent', '📋': 'copied',
+  '🔖': 'saved', '⏱️': 'timeout', '🔓': 'unlocked', '🚧': 'soon',
+};
+
+/// Clave de símbolo para un emoji de aviso, o el mismo valor si no tiene reemplazo.
+String glyphKeyForEmoji(String emoji) => _emojiToGlyph[emoji] ?? emoji;
 
 bool isGlyphKey(String value) => _glyphAssets.containsKey(value);
 
