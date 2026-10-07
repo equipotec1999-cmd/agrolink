@@ -42,12 +42,15 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, String>> _headers({bool withAuth = true}) async {
+  Future<Map<String, String>> _headers({bool withAuth = true, String? bearer}) async {
     final headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     };
-    if (withAuth) {
+    if (bearer != null) {
+      // Token explícito (p. ej. el token pendiente del paso de verificación en dos pasos).
+      headers['Authorization'] = 'Bearer $bearer';
+    } else if (withAuth) {
       final token = await tokenStorage.read();
       if (token != null) headers['Authorization'] = 'Bearer $token';
     }
@@ -63,8 +66,8 @@ class ApiClient {
     return _decode(response);
   }
 
-  Future<dynamic> post(String path, {Map<String, dynamic>? body, bool withAuth = true}) async {
-    final headers = await _headers(withAuth: withAuth);
+  Future<dynamic> post(String path, {Map<String, dynamic>? body, bool withAuth = true, String? bearer}) async {
+    final headers = await _headers(withAuth: withAuth, bearer: bearer);
     final response = await _send(() => _client.post(
           Uri.parse('$baseUrl$path'),
           headers: headers,

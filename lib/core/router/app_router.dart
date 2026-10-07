@@ -12,11 +12,15 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/listings/presentation/create_listing_screen.dart';
 import '../../features/listings/presentation/listing_detail_screen.dart';
 import '../../features/moderation/presentation/moderation_screen.dart';
+import '../../features/my_listings/data/my_listings_repository.dart';
+import '../../features/my_listings/presentation/edit_listing_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/operations/domain/operation.dart';
 import '../../features/operations/presentation/operations_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/search/presentation/search_screen.dart';
+import '../../features/security/presentation/security_screen.dart';
+import '../../features/security/presentation/two_factor_challenge_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 
 CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
@@ -53,6 +57,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', pageBuilder: (context, state) => _fadePage(state, const LoginScreen())),
+      GoRoute(
+        path: '/two-factor',
+        // Sin token pendiente (p. ej. recarga de la app) no hay nada que verificar: a iniciar sesión.
+        redirect: (context, state) => state.extra is String ? null : '/login',
+        builder: (context, state) => TwoFactorChallengeScreen(challengeToken: state.extra! as String),
+      ),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
       StatefulShellRoute.indexedStack(
         pageBuilder: (context, state, shell) => _fadePage(state, AppShell(shell: shell)),
@@ -70,6 +80,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
           ]),
         ],
+      ),
+      GoRoute(path: '/security', builder: (context, state) => const SecurityScreen()),
+      GoRoute(
+        path: '/listing/:id/edit',
+        redirect: (context, state) => state.extra is MyListing ? null : '/profile',
+        builder: (context, state) => EditListingScreen(listing: state.extra! as MyListing),
       ),
       GoRoute(
         path: '/listing/:id',

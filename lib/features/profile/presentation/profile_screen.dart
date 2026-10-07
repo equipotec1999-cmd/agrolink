@@ -6,26 +6,12 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
-import '../../../shared/widgets/product_art.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../listings/domain/listing.dart';
+import '../../my_listings/data/my_listings_repository.dart';
+import '../../my_listings/presentation/my_listings_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  static const _myListings = [
-    // ⚠️ MOCK: GET /api/v1/me/listings
-    ('🐂', 'animales', 'Vaquillas Suizo', ListingStatus.published, 1.0),
-    ('🍯', 'apicultura', 'Miel cremosa 1 kg', ListingStatus.pendingReview, 1.0),
-    ('🌶️', 'agricultura', 'Habanero rojo', ListingStatus.draft, 0.6),
-  ];
-
-  Color _statusColor(ListingStatus s) => switch (s) {
-        ListingStatus.published => AppColors.success,
-        ListingStatus.pendingReview => AppColors.honey,
-        ListingStatus.draft => AppColors.muted,
-        _ => AppColors.danger,
-      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,12 +55,15 @@ class ProfileScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Row(
+                    Row(
                       children: [
-                        _Stat(value: '3', label: 'Publicaciones'),
-                        _Stat(value: '12', label: 'Ventas'),
-                        _Stat(value: '4', label: 'Compras'),
-                        _Stat(value: '4.8', label: 'Reputación'),
+                        _Stat(
+                          value: ref.watch(myListingsProvider).maybeWhen(data: (l) => '${l.length}', orElse: () => '–'),
+                          label: 'Publicaciones',
+                        ),
+                        const _Stat(value: '12', label: 'Ventas'),
+                        const _Stat(value: '4', label: 'Compras'),
+                        const _Stat(value: '4.8', label: 'Reputación'),
                       ],
                     ),
                   ],
@@ -112,39 +101,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             SectionHeader(title: 'Mis publicaciones', action: 'Nueva', onAction: () => context.push('/create')),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 190,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _myListings.length,
-                separatorBuilder: (context, i) => const SizedBox(width: 12),
-                itemBuilder: (context, i) {
-                  final (emoji, colorKey, title, status, completeness) = _myListings[i];
-                  return Container(
-                    width: 150,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.line, width: 1.2)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: ProductArt(emoji: emoji, colorKey: colorKey, radius: 18, emojiSize: 40)),
-                        const SizedBox(height: 8),
-                        Text(title, style: AppText.bodyStrong.copyWith(fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            StatusPill(label: status.label, color: _statusColor(status)),
-                            const Spacer(),
-                            if (completeness < 1)
-                              Text('${(completeness * 100).round()}%', style: AppText.label.copyWith(fontSize: 11)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
+            const MyListingsSection(),
             const SizedBox(height: 24),
             const Text('Mi cuenta', style: AppText.h3),
             const SizedBox(height: 12),
@@ -152,6 +109,7 @@ class ProfileScreen extends ConsumerWidget {
             _MenuTile(icon: Icons.storefront_outlined, label: 'Mis ventas', onTap: () => context.push('/sales')),
             if (user?.canModerate ?? false)
               _MenuTile(icon: Icons.shield_outlined, label: 'Moderación', onTap: () => context.push('/moderation')),
+            _MenuTile(icon: Icons.lock_outline_rounded, label: 'Seguridad', onTap: () => context.push('/security')),
             _MenuTile(icon: Icons.favorite_border_rounded, label: 'Favoritos', onTap: () => context.push('/favorites')),
             _MenuTile(icon: Icons.notifications_none_rounded, label: 'Notificaciones', onTap: () => context.push('/notifications')),
             _MenuTile(icon: Icons.saved_search_rounded, label: 'Búsquedas guardadas', onTap: () => soon('Alertas', 'Fase 4')),

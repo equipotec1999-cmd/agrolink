@@ -12,6 +12,8 @@ class AppUser {
     required this.email,
     required this.intent,
     this.canModerate = false,
+    this.twoFactorEnabled = false,
+    this.twoFactorRequired = false,
   });
   final int id;
   final String name;
@@ -20,6 +22,10 @@ class AppUser {
 
   /// El backend le dio permiso de moderar: se muestra la sección de moderación.
   final bool canModerate;
+
+  /// Verificación en dos pasos activa / obligatoria para esta cuenta (permisos administrativos).
+  final bool twoFactorEnabled;
+  final bool twoFactorRequired;
 
   String get firstName => name.split(' ').first;
 }
@@ -45,6 +51,20 @@ class AuthController extends Notifier<AppUser?> {
   Future<void> login(String email, String password) async {
     state = await ref.read(authRepositoryProvider).login(email, password);
     _registerPush();
+  }
+
+  /// Segundo paso del inicio de sesión (cuentas con verificación en dos pasos).
+  Future<void> completeTwoFactor(String challengeToken, {String? code, String? recoveryCode}) async {
+    state = await ref
+        .read(authRepositoryProvider)
+        .completeTwoFactor(challengeToken, code: code, recoveryCode: recoveryCode);
+    _registerPush();
+  }
+
+  /// Vuelve a pedir el usuario al servidor (p. ej. tras activar/desactivar la verificación en dos pasos).
+  Future<void> refreshUser() async {
+    final fresh = await ref.read(authRepositoryProvider).restoreSession();
+    if (fresh != null) state = fresh;
   }
 
   Future<void> register(String name, String email, String password, UserIntent intent) async {

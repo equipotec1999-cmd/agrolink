@@ -13,6 +13,7 @@ import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/agrolink_logo.dart';
 import '../../../shared/widgets/motion.dart';
 import '../application/auth_controller.dart';
+import '../data/auth_repository.dart' show TwoFactorRequired;
 import 'auth_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -73,6 +74,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authProvider.notifier).login(_email.text.trim(), _password.text);
       if (!mounted) return;
       context.go('/home');
+    } on TwoFactorRequired catch (e) {
+      if (!mounted) return;
+      context.push('/two-factor', extra: e.challengeToken);
     } on ApiException catch (e) {
       if (!mounted) return;
       showAgroSnack(context, e.message, emoji: '⚠️');

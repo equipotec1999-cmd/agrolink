@@ -28,6 +28,23 @@ class ApiAuthRepository implements AuthRepository {
         'device_name': 'agrolink-android',
       },
     );
+    if (json['requires_two_factor'] == true) {
+      throw TwoFactorRequired(json['challenge_token'] as String);
+    }
+    await _tokenStorage.save(json['token'] as String);
+    return _userFromJson(json['user'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AppUser> completeTwoFactor(String challengeToken, {String? code, String? recoveryCode}) async {
+    final json = await _client.post(
+      '/two-factor/challenge',
+      bearer: challengeToken,
+      body: {
+        if (code != null) 'code': code,
+        if (recoveryCode != null) 'recovery_code': recoveryCode,
+      },
+    );
     await _tokenStorage.save(json['token'] as String);
     return _userFromJson(json['user'] as Map<String, dynamic>);
   }
@@ -88,6 +105,8 @@ class ApiAuthRepository implements AuthRepository {
       email: json['email'] as String,
       intent: intent,
       canModerate: json['can_moderate'] == true,
+      twoFactorEnabled: json['two_factor_enabled'] == true,
+      twoFactorRequired: json['two_factor_required'] == true,
     );
   }
 }

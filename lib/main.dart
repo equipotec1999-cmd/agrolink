@@ -19,7 +19,9 @@ import 'features/chat/data/chat_repository.dart';
 import 'features/favorites/data/favorites_repository.dart';
 import 'features/listings/data/api_listing_repository.dart';
 import 'features/moderation/data/moderation_repository.dart';
+import 'features/my_listings/data/my_listings_repository.dart';
 import 'features/notifications/data/notifications_repository.dart';
+import 'features/security/data/two_factor_repository.dart';
 import 'features/operations/data/operations_repository.dart';
 import 'features/listings/data/listing_repository.dart';
 import 'shared/widgets/agrolink_logo.dart';
@@ -77,6 +79,8 @@ Future<void> main() async {
           // al hacer login/logout; por eso se lee del provider en cada llamada.
           pushServiceProvider.overrideWithValue(pushService),
           moderationRepositoryProvider.overrideWithValue(ApiModerationRepository(apiClient)),
+          myListingsRepositoryProvider.overrideWithValue(ApiMyListingsRepository(apiClient)),
+          twoFactorRepositoryProvider.overrideWithValue(ApiTwoFactorRepository(apiClient)),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),
           notificationsRepositoryProvider.overrideWithValue(ApiNotificationsRepository(apiClient)),
           chatRepositoryProvider.overrideWith(

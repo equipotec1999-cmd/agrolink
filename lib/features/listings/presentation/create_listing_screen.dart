@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../my_listings/data/my_listings_repository.dart';
 import '../../../core/location/device_location.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
@@ -92,6 +93,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       );
       if (!mounted) return;
       ref.read(listingDraftProvider.notifier).reset();
+      ref.invalidate(myListingsProvider);
       context.pop();
     } on ApiException catch (e) {
       if (!mounted) return;
