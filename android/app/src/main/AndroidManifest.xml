@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Red (necesario en release; en debug ya lo aporta src/debug) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Ubicación: distancia en el feed y ubicación aproximada al publicar -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:label="agrolink"
         android:name="${applicationName}"
