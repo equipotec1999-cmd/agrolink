@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/agro_widgets.dart';
 import '../../../../shared/widgets/motion.dart';
 import '../../../../shared/widgets/product_art.dart';
 import '../../../catalog/domain/catalog.dart';
@@ -50,7 +51,12 @@ class FavoriteButton extends ConsumerWidget {
     final fav = ref.watch(favoritesProvider.select((s) => s.contains(listingId)));
     return Pressable(
       scale: 0.85,
-      onTap: () => ref.read(favoritesProvider.notifier).toggle(listingId),
+      onTap: () async {
+        final ok = await ref.read(favoritesProvider.notifier).toggle(listingId);
+        if (!ok && context.mounted) {
+          showAgroSnack(context, 'No se pudo actualizar tus favoritos. Revisa tu conexión.', emoji: '⚠️');
+        }
+      },
       child: Container(
         width: size,
         height: size,

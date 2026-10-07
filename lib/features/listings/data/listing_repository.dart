@@ -12,6 +12,9 @@ abstract interface class ListingRepository {
   Future<List<Listing>> search(SearchFilters filters);
   Future<List<Listing>> byIds(Set<String> ids);
 
+  /// Publicaciones guardadas por el usuario con sesión iniciada.
+  Future<List<Listing>> favorites();
+
   /// Crea el listing (draft), sube sus fotos en orden y lo publica.
   /// `lat`/`lng` son la ubicación real del dispositivo (Fase 1 §6: el punto
   /// exacto nunca sale de aquí hacia la UI; el backend le aplica el jitter).

@@ -13,6 +13,7 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/catalog/data/api_catalog_repository.dart';
 import 'features/catalog/data/catalog_repository.dart';
 import 'features/catalog/domain/catalog.dart';
+import 'features/favorites/data/favorites_repository.dart';
 import 'features/listings/data/api_listing_repository.dart';
 import 'features/listings/data/listing_repository.dart';
 import 'shared/widgets/agrolink_logo.dart';
@@ -57,6 +58,7 @@ Future<void> main() async {
           authRepositoryProvider.overrideWithValue(authRepository),
           initialAuthUserProvider.overrideWithValue(restoredUser),
           listingRepositoryProvider.overrideWithValue(listingRepository),
+          favoritesRepositoryProvider.overrideWithValue(ApiFavoritesRepository(apiClient)),
         ],
         child: const AgroLinkApp(),
       ),

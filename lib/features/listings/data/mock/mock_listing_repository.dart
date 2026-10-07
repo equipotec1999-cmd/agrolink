@@ -37,6 +37,10 @@ class MockListingRepository implements ListingRepository {
     return mockListings.where((l) => ids.contains(l.id)).toList();
   }
 
+  // El mock no tiene sesión ni servidor: no hay favoritos persistidos.
+  @override
+  Future<List<Listing>> favorites() async => [];
+
   @override
   Future<List<Listing>> search(SearchFilters f) async {
     await Future<void>.delayed(_latency);

@@ -50,6 +50,12 @@ class ApiListingRepository implements ListingRepository {
   }
 
   @override
+  Future<List<Listing>> favorites() async {
+    final response = await _client.get('/favorites') as Map<String, dynamic>;
+    return _mapPage(response);
+  }
+
+  @override
   Future<List<Listing>> search(SearchFilters f) async {
     final query = <String, dynamic>{};
     if (f.query.trim().isNotEmpty) query['q'] = f.query.trim();
