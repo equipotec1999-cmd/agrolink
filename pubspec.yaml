@@ -63,6 +63,7 @@ flutter:
     # Logo oficial y emblemas de categoría (PNG blanco con transparencia; se
     # tiñen en código al color que toque según el fondo).
     - assets/brand/
+    - assets/brand/glyphs/
 
   fonts:
     # Serif de inscripción para titulares (rediseño rústico). OFL, ver OFL-Cinzel.txt.
