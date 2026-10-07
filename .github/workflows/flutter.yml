@@ -1,0 +1,47 @@
+name: Flutter
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # google-services.json no está en el repo (es local); el análisis y las pruebas no lo necesitan.
+      - name: Análisis estático
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze-out.txt 2>&1
+          code=$?
+          cat analyze-out.txt
+          if [ $code -ne 0 ]; then
+            msg=$(head -c 9000 analyze-out.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=flutter analyze::$msg"
+          fi
+          exit $code
+
+      - name: Pruebas
+        run: |
+          set +e
+          flutter test > test-out.txt 2>&1
+          code=$?
+          cat test-out.txt
+          if [ $code -ne 0 ]; then
+            msg=$(grep -vE '^\s*$' test-out.txt | tail -c 9000 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+            echo "::error title=flutter test::$msg"
+          fi
+          exit $code
