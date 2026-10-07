@@ -22,6 +22,7 @@ import 'features/listings/data/api_listing_repository.dart';
 import 'features/moderation/data/moderation_repository.dart';
 import 'features/my_listings/data/my_listings_repository.dart';
 import 'features/notifications/data/notifications_repository.dart';
+import 'features/saved_searches/data/saved_searches_repository.dart';
 import 'features/security/data/two_factor_repository.dart';
 import 'features/operations/data/operations_repository.dart';
 import 'features/listings/data/listing_repository.dart';
@@ -81,6 +82,7 @@ Future<void> main() async {
           pushServiceProvider.overrideWithValue(pushService),
           moderationRepositoryProvider.overrideWithValue(ApiModerationRepository(apiClient)),
           complianceRulesRepositoryProvider.overrideWithValue(ApiComplianceRulesRepository(apiClient)),
+          savedSearchesRepositoryProvider.overrideWithValue(ApiSavedSearchesRepository(apiClient)),
           myListingsRepositoryProvider.overrideWithValue(ApiMyListingsRepository(apiClient)),
           twoFactorRepositoryProvider.overrideWithValue(ApiTwoFactorRepository(apiClient)),
           operationsRepositoryProvider.overrideWithValue(ApiOperationsRepository(apiClient)),

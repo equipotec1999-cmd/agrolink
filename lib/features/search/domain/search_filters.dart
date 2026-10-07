@@ -76,4 +76,37 @@ class SearchFilters {
       sort: sort ?? this.sort,
     );
   }
+
+  /// Misma forma que guarda el backend en `busquedas_guardadas.consulta`.
+  Map<String, dynamic> toJson() => {
+        'query': query,
+        if (categoryId != null) 'category_id': categoryId,
+        if (productTypeId != null) 'product_type_id': productTypeId,
+        if (maxDistanceKm != null) 'max_distance_km': maxDistanceKm,
+        'verified_only': verifiedOnly,
+        'negotiable_only': negotiableOnly,
+        'lots_only': lotsOnly,
+        'sort': sort.name,
+        'attributes': {
+          for (final e in attributeValues.entries)
+            if (e.value.isNotEmpty) e.key: e.value.toList(),
+        },
+      };
+
+  factory SearchFilters.fromJson(Map<String, dynamic> j) {
+    final attrs = j['attributes'];
+    return SearchFilters(
+      query: j['query'] as String? ?? '',
+      categoryId: j['category_id'] as String?,
+      productTypeId: j['product_type_id'] as String?,
+      maxDistanceKm: int.tryParse('${j['max_distance_km']}'),
+      verifiedOnly: j['verified_only'] == true,
+      negotiableOnly: j['negotiable_only'] == true,
+      lotsOnly: j['lots_only'] == true,
+      sort: SortOption.values.firstWhere((o) => o.name == j['sort'], orElse: () => SortOption.nearest),
+      attributeValues: attrs is Map
+          ? {for (final e in attrs.entries) '${e.key}': (e.value as List<dynamic>).map((v) => '$v').toSet()}
+          : const {},
+    );
+  }
 }

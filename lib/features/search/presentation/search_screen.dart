@@ -5,7 +5,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
+
+import '../../../core/network/api_exception.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
+import '../../saved_searches/data/saved_searches_repository.dart';
 import '../../listings/presentation/widgets/listing_widgets.dart';
 import '../application/search_controller.dart';
 import '../domain/search_filters.dart';
@@ -41,6 +45,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ref.read(searchFiltersProvider.notifier).setQuery(q);
   }
 
+  Future<void> _saveSearch(SearchFilters filters) async {
+    if (ref.read(authProvider) == null) {
+      showAgroSnack(context, 'Inicia sesión para guardar búsquedas', emoji: '🔒');
+      return;
+    }
+    final controller = TextEditingController(text: filters.query.trim());
+    final name = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Guardar búsqueda'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 80,
+          decoration: const InputDecoration(hintText: 'Nombre (ej. Borregos de engorda)'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(d).pop(), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.of(d).pop(controller.text.trim()), child: const Text('Guardar')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (name == null || name.length < 2 || !mounted) return;
+    try {
+      await ref.read(savedSearchesRepositoryProvider).save(name, filters);
+      ref.invalidate(savedSearchesProvider);
+      if (mounted) showAgroSnack(context, 'Búsqueda guardada', emoji: '🔖');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filters = ref.watch(searchFiltersProvider);
@@ -48,6 +85,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final results = ref.watch(searchResultsProvider);
     final catalog = ref.watch(catalogProvider);
     final ctrl = ref.read(searchFiltersProvider.notifier);
+
+    // Si los filtros cambian desde fuera (p. ej. al abrir una búsqueda guardada), el cuadro de texto los refleja.
+    ref.listen(searchFiltersProvider.select((f) => f.query), (_, q) {
+      if (_query.text != q) {
+        _query.text = q;
+        _query.selection = TextSelection.collapsed(offset: q.length);
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
@@ -170,6 +215,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
             ),
+            if (filters.query.trim().isNotEmpty || filters.activeCount > 0 || filters.categoryId != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _saveSearch(filters),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                      label: const Text('Guardar búsqueda'),
+                    ),
+                  ),
+                ),
+              ),
             if (filters.query.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
