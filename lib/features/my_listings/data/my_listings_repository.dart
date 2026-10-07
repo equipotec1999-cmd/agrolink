@@ -31,19 +31,19 @@ class MyListing {
   final String? moderationNote;
   final String? coverUrl;
 
-  bool get canResubmit => status == 'rejected' || status == 'suspended';
-  bool get canPublish => status == 'draft';
-  bool get canArchive => const {'published', 'pending_review', 'rejected', 'suspended', 'expired'}.contains(status);
+  bool get canResubmit => status == 'rechazada' || status == 'suspended';
+  bool get canPublish => status == 'borrador';
+  bool get canArchive => const {'publicada', 'en_revision', 'rechazada', 'suspended', 'vencida'}.contains(status);
 
   String get statusLabel => switch (status) {
-        'draft' => 'Borrador',
-        'pending_review' => 'En revisión',
-        'published' => 'Publicado',
-        'rejected' => 'Rechazado',
+        'borrador' => 'Borrador',
+        'en_revision' => 'En revisión',
+        'publicada' => 'Publicado',
+        'rechazada' => 'Rechazado',
         'suspended' => 'Suspendido',
         'sold' => 'Vendido',
-        'expired' => 'Vencido',
-        'archived' => 'Archivado',
+        'vencida' => 'Vencido',
+        'archivada' => 'Archivado',
         _ => status,
       };
 

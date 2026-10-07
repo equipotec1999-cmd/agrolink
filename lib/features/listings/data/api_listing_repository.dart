@@ -137,7 +137,7 @@ class ApiListingRepository implements ListingRepository {
     // flujo de publicar — el usuario ya vio y aceptó completar sin ella.
     for (final path in draft.photos) {
       try {
-        await _client.postMultipart('/listings/$listingId/media', fieldName: 'photo', filePath: path);
+        await _client.postMultipart('/listings/$listingId/media', fieldName: 'foto', filePath: path);
       } catch (_) {
         continue;
       }
@@ -240,8 +240,8 @@ class ApiListingRepository implements ListingRepository {
 
   DocumentStatus _docStatusFromWire(String v) => switch (v) {
         'verified' => DocumentStatus.verified,
-        'rejected' => DocumentStatus.rejected,
-        'expired' => DocumentStatus.expired,
+        'rechazada' => DocumentStatus.rejected,
+        'vencida' => DocumentStatus.expired,
         'not_applicable' => DocumentStatus.notApplicable,
         _ => DocumentStatus.pending,
       };

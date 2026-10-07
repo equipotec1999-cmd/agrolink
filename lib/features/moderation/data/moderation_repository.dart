@@ -60,9 +60,9 @@ class ReportItem {
 }
 
 enum ReportAction {
-  dismiss('dismiss'),
+  dismiss('descartar'),
   resolve('resolve'),
-  hideListing('hide_listing');
+  hideListing('ocultar_publicacion');
 
   const ReportAction(this.wire);
   final String wire;

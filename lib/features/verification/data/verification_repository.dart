@@ -16,8 +16,8 @@ class VerificationStatus {
   final String? businessName;
   final String? rejectionReason;
 
-  bool get isPending => status == 'pending';
-  bool get isRejected => status == 'rejected' && !isVerified;
+  bool get isPending => status == 'pendiente';
+  bool get isRejected => status == 'rechazada' && !isVerified;
 }
 
 class VerificationDoc {

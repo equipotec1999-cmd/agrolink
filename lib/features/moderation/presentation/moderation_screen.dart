@@ -199,12 +199,12 @@ class _ReportsTab extends ConsumerWidget {
                 itemBuilder: (context, i) {
                   final r = items[i];
                   return _Card(
-                    onOpen: r.listingId == null || r.listingStatus != 'published' ? null : () => context.push('/listing/${r.listingId}'),
+                    onOpen: r.listingId == null || r.listingStatus != 'publicada' ? null : () => context.push('/listing/${r.listingId}'),
                     leading: const Center(child: Text('🚩', style: TextStyle(fontSize: 26))),
                     title: r.reasonLabel,
                     lines: [
                       '«${r.listingTitle}» · ${r.seller}',
-                      if (r.listingStatus.isNotEmpty && r.listingStatus != 'published') 'Estado: ${r.listingStatus}',
+                      if (r.listingStatus.isNotEmpty && r.listingStatus != 'publicada') 'Estado: ${r.listingStatus}',
                       if (r.description != null && r.description!.isNotEmpty) r.description!,
                       'Reportó: ${r.reporter}',
                     ],

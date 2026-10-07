@@ -13,11 +13,11 @@ extension OfferStatusX on OfferStatus {
   bool get isOpen => this == OfferStatus.sent;
 
   static OfferStatus fromWire(String v) => switch (v) {
-        'accepted' => OfferStatus.accepted,
-        'rejected' => OfferStatus.rejected,
-        'countered' => OfferStatus.countered,
+        'aceptada' => OfferStatus.accepted,
+        'rechazada' => OfferStatus.rejected,
+        'contraoferta' => OfferStatus.countered,
         'cancelled' => OfferStatus.cancelled,
-        'expired' => OfferStatus.expired,
+        'vencida' => OfferStatus.expired,
         _ => OfferStatus.sent,
       };
 }

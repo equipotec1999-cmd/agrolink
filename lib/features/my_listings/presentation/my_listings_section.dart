@@ -11,9 +11,9 @@ import '../../../shared/widgets/product_art.dart';
 import '../data/my_listings_repository.dart';
 
 Color _statusColor(String status) => switch (status) {
-      'published' => AppColors.success,
-      'pending_review' => AppColors.honey,
-      'draft' || 'archived' || 'sold' || 'expired' => AppColors.muted,
+      'publicada' => AppColors.success,
+      'en_revision' => AppColors.honey,
+      'borrador' || 'archivada' || 'sold' || 'vencida' => AppColors.muted,
       _ => AppColors.danger,
     };
 
@@ -144,7 +144,7 @@ class _MyListingCard extends ConsumerWidget {
               ],
             ),
           ),
-          if (item.moderationNote != null && (item.canResubmit || item.status == 'pending_review')) ...[
+          if (item.moderationNote != null && (item.canResubmit || item.status == 'en_revision')) ...[
             const SizedBox(height: 10),
             Container(
               width: double.infinity,
