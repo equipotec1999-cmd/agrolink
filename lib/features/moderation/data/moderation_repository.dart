@@ -83,6 +83,8 @@ abstract interface class ModerationRepository {
   Future<List<QueueItem>> queue();
   Future<void> approve(String listingId);
   Future<void> reject(String listingId, String reason);
+  Future<void> suspendListing(String listingId, String reason);
+  Future<void> deleteListing(String listingId, String reason);
 
   Future<List<ReportItem>> reports();
   Future<void> resolveReport(String reportId, ReportAction action, {String? note});
@@ -150,6 +152,16 @@ class ApiModerationRepository implements ModerationRepository {
   @override
   Future<void> reject(String listingId, String reason) async {
     await _client.post('/moderation/listings/$listingId/reject', body: {'reason': reason});
+  }
+
+  @override
+  Future<void> suspendListing(String listingId, String reason) async {
+    await _client.post('/moderation/listings/$listingId/suspend', body: {'reason': reason});
+  }
+
+  @override
+  Future<void> deleteListing(String listingId, String reason) async {
+    await _client.delete('/moderation/listings/$listingId', body: {'reason': reason});
   }
 
   @override

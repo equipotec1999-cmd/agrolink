@@ -10,37 +10,9 @@ import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/product_art.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../verification/data/verification_repository.dart';
+import '../../../shared/widgets/ask_text_dialog.dart';
 import '../data/moderation_repository.dart';
 
-/// Pide un texto en un diálogo. Devuelve null si se cancela.
-Future<String?> _askText(BuildContext context, {required String title, required String hint, bool required = true}) {
-  final controller = TextEditingController();
-  return showDialog<String>(
-    context: context,
-    builder: (dialog) => StatefulBuilder(
-      builder: (dialog, setState) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 300,
-          maxLines: 3,
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(hintText: hint),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(dialog).pop(), child: const Text('Cancelar')),
-          TextButton(
-            onPressed: required && controller.text.trim().length < 3
-                ? null
-                : () => Navigator.of(dialog).pop(controller.text.trim()),
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
 /// Sección de moderación (solo cuentas con permiso de moderar; el backend lo exige igual).
 class ModerationScreen extends ConsumerWidget {
@@ -137,7 +109,7 @@ class _QueueTab extends ConsumerWidget {
                           tone: ButtonTone.light,
                           height: 44,
                           onTap: () async {
-                            final reason = await _askText(context,
+                            final reason = await askText(context,
                                 title: 'Motivo del rechazo', hint: 'Se le muestra al vendedor');
                             if (reason == null || !context.mounted) return;
                             await _run(context, () => repo.reject(it.id, reason),
@@ -175,7 +147,7 @@ class _ReportsTab extends ConsumerWidget {
     Future<void> resolve(ReportItem r, ReportAction action, {required bool askNote}) async {
       String? note;
       if (askNote) {
-        note = await _askText(context,
+        note = await askText(context,
             title: action == ReportAction.hideListing ? 'Nota para el vendedor' : 'Nota',
             hint: 'Opcional', required: false);
         if (note == null || !context.mounted) return; // cancelado
@@ -205,7 +177,7 @@ class _ReportsTab extends ConsumerWidget {
                     lines: [
                       r.isUserReport ? 'Usuario: ${r.userName ?? ''}' : '«${r.listingTitle}» · ${r.seller}',
                       if (r.listingStatus.isNotEmpty && r.listingStatus != 'publicada') 'Estado: ${r.listingStatus}',
-                      if (r.description != null && r.description!.isNotEmpty) r.description!,
+                      if (r.description != null && r.description!.isNotEmpty) '📝 ${r.description!}',
                       'Reportó: ${r.reporter}',
                     ],
                     actions: [
@@ -303,7 +275,7 @@ class _SellersTab extends ConsumerWidget {
                               tone: ButtonTone.light,
                               height: 44,
                               onTap: () async {
-                                final reason = await _askText(context,
+                                final reason = await askText(context,
                                     title: 'Motivo del rechazo', hint: 'Se le muestra al vendedor');
                                 if (reason == null || !context.mounted) return;
                                 await _run(context, () => repo.reject(v.id, reason),

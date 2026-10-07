@@ -12,7 +12,9 @@ import '../../auth/application/auth_controller.dart';
 import '../../catalog/data/catalog_repository.dart';
 import '../../catalog/domain/catalog.dart';
 import '../../chat/application/chat_controller.dart';
+import '../../../shared/widgets/ask_text_dialog.dart';
 import '../../moderation/data/moderation_repository.dart';
+import '../../moderation/presentation/report_sheet.dart';
 import '../../chat/presentation/offer_sheet.dart';
 import '../application/listing_providers.dart';
 import '../domain/listing.dart';
@@ -90,58 +92,40 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     }
   }
 
-  void _report({bool user = false}) {
+  Future<void> _openReportSheet({bool user = false}) async {
     if (ref.read(authProvider) == null) {
       context.push('/login');
       return;
     }
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.cream,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(21))),
-      builder: (sheet) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(user ? 'Reportar vendedor' : 'Reportar publicación', style: AppText.h2),
-              const SizedBox(height: 4),
-              const Text('Un moderador revisará tu reporte.', style: AppText.muted),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final r in reportReasons.entries)
-                    AgroChip(
-                      dense: true,
-                      label: r.value,
-                      selected: false,
-                      onTap: () {
-                        Navigator.of(sheet).pop();
-                        _sendReport(r.key, r.value, user: user);
-                      },
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _sendReport(String reason, String label, {bool user = false}) async {
+    final result = await showReportSheet(context, title: user ? 'Reportar vendedor' : 'Reportar publicación');
+    if (result == null || !mounted) return;
+    final (reason, description) = result;
     try {
       final repo = ref.read(moderationRepositoryProvider);
       if (user) {
-        await repo.reportUser(l.seller.id, reason);
+        await repo.reportUser(l.seller.id, reason, description: description);
       } else {
-        await repo.reportListing(l.id, reason);
+        await repo.reportListing(l.id, reason, description: description);
       }
-      if (mounted) showAgroSnack(context, 'Reporte enviado: $label', emoji: '🚩');
+      if (mounted) showAgroSnack(context, 'Reporte enviado', emoji: '🚩');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+    }
+  }
+
+  Future<void> _modAction({required bool suspend}) async {
+    final reason = await askText(context, title: suspend ? 'Motivo para suspender' : 'Motivo para eliminar', hint: 'Explica brevemente (mínimo 5)', minLength: 5);
+    if (reason == null || !mounted) return;
+    try {
+      final repo = ref.read(moderationRepositoryProvider);
+      suspend ? await repo.suspendListing(l.id, reason) : await repo.deleteListing(l.id, reason);
+      if (!mounted) return;
+      showAgroSnack(context, suspend ? 'Publicación suspendida' : 'Publicación eliminada', emoji: '🛡️');
+      if (suspend) {
+        context.pop();
+      } else {
+        context.pop();
+      }
     } on ApiException catch (e) {
       if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
     }
@@ -152,6 +136,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     final catalog = ref.watch(catalogProvider);
     final type = catalog.type(l.productTypeId);
     final top = MediaQuery.of(context).padding.top;
+    final isMe = ref.watch(authProvider)?.id.toString() == l.seller.id;
+    final canModerate = (ref.watch(authProvider)?.canModerate ?? false) && !isMe;
 
     return Scaffold(
       body: Stack(
@@ -267,8 +253,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        const _TrustLegend(),
-                        const SizedBox(height: 12),
+                        if (l.attributes.any((a) => a.verification != VerificationLevel.declared)) ...[
+                          const _TrustLegend(),
+                          const SizedBox(height: 12),
+                        ],
                         AnimatedSize(
                           duration: const Duration(milliseconds: 380),
                           curve: Curves.easeOutCubic,
@@ -297,23 +285,67 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                         // 8. Vendedor
                         _SellerCard(seller: l.seller),
                         const SizedBox(height: 18),
-                        Center(
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            children: [
-                              TextButton.icon(
-                                onPressed: _report,
-                                icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.muted),
-                                label: Text('Reportar publicación', style: AppText.label.copyWith(color: AppColors.muted)),
-                              ),
-                              TextButton.icon(
-                                onPressed: () => _report(user: true),
-                                icon: const Icon(Icons.person_off_outlined, size: 18, color: AppColors.muted),
-                                label: Text('Reportar vendedor', style: AppText.label.copyWith(color: AppColors.muted)),
-                              ),
-                            ],
+                        if (!isMe) ...[
+                          Center(
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: _openReportSheet,
+                                  icon: const Icon(Icons.flag_outlined, size: 18, color: AppColors.muted),
+                                  label: Text('Reportar publicación', style: AppText.label.copyWith(color: AppColors.muted)),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () => _openReportSheet(user: true),
+                                  icon: const Icon(Icons.person_off_outlined, size: 18, color: AppColors.muted),
+                                  label: Text('Reportar vendedor', style: AppText.label.copyWith(color: AppColors.muted)),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
+                        if (canModerate) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.honey.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.honey, width: 1.2),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: const [
+                                  Icon(Icons.shield_outlined, size: 18, color: AppColors.ink),
+                                  SizedBox(width: 6),
+                                  Text('Acciones de moderación', style: AppText.title),
+                                ]),
+                                const SizedBox(height: 4),
+                                const SizedBox(height: 10),
+                                Row(children: [
+                                  Expanded(
+                                    child: AgroButton(
+                                      label: 'Suspender',
+                                      tone: ButtonTone.light,
+                                      height: 44,
+                                      onTap: () => _modAction(suspend: true),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: AgroButton(
+                                      label: 'Eliminar',
+                                      tone: ButtonTone.lime,
+                                      height: 44,
+                                      onTap: () => _modAction(suspend: false),
+                                    ),
+                                  ),
+                                ]),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -518,8 +550,10 @@ class _SpecRow extends StatelessWidget {
               textAlign: TextAlign.right,
             ),
           ),
-          const SizedBox(width: 8),
-          Tooltip(message: label, child: Icon(icon, size: 16, color: color)),
+          if (value.verification != VerificationLevel.declared) ...[
+            const SizedBox(width: 8),
+            Tooltip(message: label, child: Icon(icon, size: 16, color: color)),
+          ],
         ],
       ),
     );

@@ -80,7 +80,7 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
     HapticFeedback.heavyImpact();
     setState(() => _publishing = true);
     try {
-      await ref.read(listingRepositoryProvider).publishDraft(
+      final published = await ref.read(listingRepositoryProvider).publishDraft(
             draft,
             type,
             lat: draft.lat!,
@@ -90,12 +90,12 @@ class _CreateListingScreenState extends ConsumerState<CreateListingScreen> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) => const _PublishedDialog(),
+        builder: (dialogContext) => _PublishedDialog(listingId: published.id),
       );
       if (!mounted) return;
       ref.read(listingDraftProvider.notifier).reset();
       ref.invalidate(myListingsProvider);
-      context.pop();
+      if (mounted) context.pop();
     } on ApiException catch (e) {
       if (!mounted) return;
       showAgroSnack(context, e.message, emoji: '⚠️');
@@ -1064,7 +1064,8 @@ class _ReviewStep extends ConsumerWidget {
 }
 
 class _PublishedDialog extends StatefulWidget {
-  const _PublishedDialog();
+  const _PublishedDialog({required this.listingId});
+  final String listingId;
 
   @override
   State<_PublishedDialog> createState() => _PublishedDialogState();
@@ -1105,12 +1106,25 @@ class _PublishedDialogState extends State<_PublishedDialog> with SingleTickerPro
             const Text('¡Enviada a revisión!', style: AppText.h2, textAlign: TextAlign.center),
             const SizedBox(height: 8),
             const Text(
-              'Estado: pending_review. Te avisaremos cuando un moderador la apruebe.',
+              'Un moderador la revisará pronto. Te avisaremos cuando sea visible.',
               style: AppText.muted,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 22),
-            AgroButton(label: 'Listo', onTap: () => Navigator.of(context).pop()),
+            AgroButton(
+              label: 'Ver mi publicación',
+              icon: Icons.visibility_rounded,
+              onTap: () {
+                Navigator.of(context).pop();
+                context.push('/listing/${widget.listingId}');
+              },
+            ),
+            const SizedBox(height: 10),
+            AgroButton(
+              label: 'Listo',
+              tone: ButtonTone.light,
+              onTap: () => Navigator.of(context).pop(),
+            ),
           ],
         ),
       ),
