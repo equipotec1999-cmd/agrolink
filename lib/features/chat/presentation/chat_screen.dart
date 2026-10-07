@@ -129,7 +129,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       body: Column(
         children: [
-          _ChatHeader(conversation: c),
+          _ChatHeader(conversation: c, onReport: () => _reportUser(c)),
           Expanded(
             child: !c.messagesLoaded
                 ? (_firstLoadFailed
@@ -179,8 +179,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 class _ChatHeader extends StatelessWidget {
-  const _ChatHeader({required this.conversation});
+  const _ChatHeader({required this.conversation, required this.onReport});
   final Conversation conversation;
+  final VoidCallback onReport;
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +223,7 @@ class _ChatHeader extends StatelessWidget {
                     icon: Icons.flag_outlined,
                     background: AppColors.cream,
                     size: 42,
-                    onTap: () => _reportUser(c),
+                    onTap: onReport,
                   ),
                 ],
               ),
