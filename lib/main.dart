@@ -78,6 +78,7 @@ Future<void> main() async {
           authRepositoryProvider.overrideWithValue(authRepository),
           initialAuthUserProvider.overrideWithValue(restoredUser),
           listingRepositoryProvider.overrideWithValue(listingRepository),
+          apiClientProvider.overrideWithValue(apiClient),
           favoritesRepositoryProvider.overrideWithValue(ApiFavoritesRepository(apiClient)),
           // "Mis" mensajes se decide con el usuario de la sesión actual, que cambia
           // al hacer login/logout; por eso se lee del provider en cada llamada.

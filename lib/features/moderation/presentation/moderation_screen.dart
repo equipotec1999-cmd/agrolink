@@ -183,6 +183,16 @@ class _ReportsTab extends ConsumerWidget {
                     actions: [
                       Expanded(
                         child: AgroButton(
+                          label: 'Chat',
+                          icon: Icons.chat_bubble_outline,
+                          tone: ButtonTone.light,
+                          height: 44,
+                          onTap: () => context.push('/moderation/reports/${r.id}/thread'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: AgroButton(
                           label: 'Descartar',
                           tone: ButtonTone.light,
                           height: 44,

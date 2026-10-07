@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/env.dart';
@@ -173,3 +174,8 @@ class ApiClient {
     );
   }
 }
+
+/// Se sobreescribe en main.dart con el ApiClient compartido.
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => throw UnimplementedError('apiClientProvider debe sobreescribirse en main.dart'),
+);
