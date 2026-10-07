@@ -218,7 +218,10 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(accountRepositoryProvider).updateProfile(name: _name.text.trim(), phone: _phone.text.trim());
+      final fresh = await ref.read(accountRepositoryProvider).updateProfile(
+            ProfileEdit(name: _name.text.trim(), phone: _phone.text.trim()),
+          );
+      ref.read(authProvider.notifier).setUser(fresh);
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (e) {

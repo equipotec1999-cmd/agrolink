@@ -17,7 +17,7 @@ abstract interface class AuthRepository {
   /// Lanza [TwoFactorRequired] si la cuenta tiene verificación en dos pasos.
   Future<AppUser> login(String email, String password);
   Future<AppUser> completeTwoFactor(String challengeToken, {String? code, String? recoveryCode});
-  Future<AppUser> register(String name, String email, String password, UserIntent intent);
+  Future<AppUser> register(String name, String email, String password, UserIntent intent, {String? lastname});
   Future<void> logout();
 
   /// Si hay un token guardado y sigue siendo válido (GET /api/me responde bien), regresa

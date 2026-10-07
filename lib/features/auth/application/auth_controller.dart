@@ -11,6 +11,7 @@ class AppUser {
     required this.name,
     required this.email,
     required this.intent,
+    this.lastname,
     this.canModerate = false,
     this.twoFactorEnabled = false,
     this.twoFactorRequired = false,
@@ -19,12 +20,23 @@ class AppUser {
     this.emailVerified = false,
     this.sellerVerified = false,
     this.canReviewDocuments = false,
+    this.bio,
+    this.state,
+    this.municipality,
+    this.avatarUrl,
   });
   final int id;
   final String name;
+  final String? lastname;
   final String email;
   final String? phone;
   final bool emailVerified;
+  final String? bio;
+  final String? state;
+  final String? municipality;
+  final String? avatarUrl;
+
+  String get fullName => [name, lastname].where((p) => p != null && p.trim().isNotEmpty).join(' ');
 
   /// Vendedor verificado (insignia) y permiso de revisar solicitudes de verificación.
   final bool sellerVerified;
@@ -81,9 +93,14 @@ class AuthController extends Notifier<AppUser?> {
     if (fresh != null) state = fresh;
   }
 
-  Future<void> register(String name, String email, String password, UserIntent intent) async {
-    state = await ref.read(authRepositoryProvider).register(name, email, password, intent);
+  Future<void> register(String name, String email, String password, UserIntent intent, {String? lastname}) async {
+    state = await ref.read(authRepositoryProvider).register(name, email, password, intent, lastname: lastname);
     _registerPush();
+  }
+
+  /// El perfil se cambió desde la pantalla de edición: pisa el estado con el usuario fresco.
+  void setUser(AppUser user) {
+    state = user;
   }
 
   Future<void> logout() async {

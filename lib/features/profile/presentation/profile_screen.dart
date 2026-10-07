@@ -18,7 +18,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
-    final name = user?.name ?? 'Productor Demo';
+    final name = user?.name.isNotEmpty == true ? user!.fullName : 'Productor Demo';
+    final avatar = user?.avatarUrl;
+    final place = [user?.municipality, user?.state].where((p) => p != null && p.trim().isNotEmpty).join(', ');
 
 
     return Scaffold(
@@ -35,10 +37,17 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: AppColors.lime,
-                          child: Text(name.substring(0, 1).toUpperCase(), style: AppText.h1.copyWith(fontSize: 26)),
+                        Pressable(
+                          onTap: () => context.push('/profile/edit'),
+                          scale: 0.95,
+                          child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: AppColors.lime,
+                            backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                            child: avatar == null || avatar.isEmpty
+                                ? Text(name.substring(0, 1).toUpperCase(), style: AppText.h1.copyWith(fontSize: 26))
+                                : null,
+                          ),
                         ),
                         const SizedBox(width: 14),
                         Expanded(
@@ -48,14 +57,45 @@ class ProfileScreen extends ConsumerWidget {
                               Text(name, style: AppText.h3.copyWith(color: Colors.white), overflow: TextOverflow.ellipsis),
                               const SizedBox(height: 4),
                               Text(user?.email ?? 'demo@agrolink.mx', style: AppText.muted.copyWith(color: Colors.white54)),
+                              if (place.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(place, style: AppText.muted.copyWith(color: Colors.white54, fontSize: 12)),
+                              ],
                               const SizedBox(height: 8),
-                              if (!(user?.emailVerified ?? true))
-                                const StatusPill(label: 'Correo sin verificar', color: AppColors.honey, icon: Icons.mail_outline_rounded),
+                              Row(
+                                children: [
+                                  if (!(user?.emailVerified ?? true))
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 8),
+                                      child: StatusPill(label: 'Correo sin verificar', color: AppColors.honey, icon: Icons.mail_outline_rounded),
+                                    ),
+                                  Pressable(
+                                    onTap: () => context.push('/profile/edit'),
+                                    scale: 0.95,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.14),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                        const Icon(Icons.edit_outlined, color: Colors.white, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text('Editar', style: AppText.label.copyWith(color: Colors.white, fontSize: 11.5)),
+                                      ]),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
+                    if (user?.bio != null && user!.bio!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(user.bio!, style: AppText.muted.copyWith(color: Colors.white70)),
+                    ],
                     const SizedBox(height: 20),
                     Builder(builder: (context) {
                       final stats = ref.watch(profileStatsProvider).asData?.value;

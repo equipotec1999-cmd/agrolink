@@ -12,10 +12,27 @@ class ProfileStats {
   final double? rating;
 }
 
+/// Datos editables del perfil. Null = "no cambiar"; cadena vacía = "borrar".
+class ProfileEdit {
+  const ProfileEdit({this.name, this.lastname, this.phone, this.bio, this.state, this.municipality});
+  final String? name;
+  final String? lastname;
+  final String? phone;
+  final String? bio;
+  final String? state;
+  final String? municipality;
+}
+
 abstract interface class AccountRepository {
   Future<ProfileStats> stats();
-  Future<void> updateProfile({required String name, String? phone});
+
+  /// Actualiza el perfil y devuelve el usuario fresco (con avatar_url, bio, lugar...).
+  Future<AppUser> updateProfile(ProfileEdit edit);
   Future<void> changePassword({required String current, required String next});
+
+  /// Sube el avatar (ruta local del archivo). Devuelve el usuario con la URL ya resuelta.
+  Future<AppUser> uploadAvatar(String path);
+  Future<AppUser> removeAvatar();
 }
 
 final profileStatsProvider = FutureProvider.autoDispose<ProfileStats>((ref) {
@@ -46,8 +63,18 @@ class ApiAccountRepository implements AccountRepository {
   }
 
   @override
-  Future<void> updateProfile({required String name, String? phone}) async {
-    await _client.patch('/me', body: {'name': name, 'phone': (phone == null || phone.isEmpty) ? null : phone});
+  Future<AppUser> updateProfile(ProfileEdit edit) async {
+    // Solo manda los campos presentes; "" significa borrar (lastname, bio, teléfono...).
+    final body = <String, dynamic>{
+      if (edit.name != null) 'name': edit.name,
+      if (edit.lastname != null) 'lastname': edit.lastname!.isEmpty ? null : edit.lastname,
+      if (edit.phone != null) 'phone': edit.phone!.isEmpty ? null : edit.phone,
+      if (edit.bio != null) 'bio': edit.bio!.isEmpty ? null : edit.bio,
+      if (edit.state != null) 'state': edit.state!.isEmpty ? null : edit.state,
+      if (edit.municipality != null) 'municipality': edit.municipality!.isEmpty ? null : edit.municipality,
+    };
+    final r = await _client.patch('/me', body: body) as Map<String, dynamic>;
+    return _userFromJson(r['data'] as Map<String, dynamic>);
   }
 
   @override
@@ -57,5 +84,40 @@ class ApiAccountRepository implements AccountRepository {
       'password': next,
       'password_confirmation': next,
     });
+  }
+
+  @override
+  Future<AppUser> uploadAvatar(String path) async {
+    final r = await _client.postMultipartForm('/me/avatar', files: {'avatar': path}) as Map<String, dynamic>;
+    return _userFromJson(r['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<AppUser> removeAvatar() async {
+    final r = await _client.delete('/me/avatar') as Map<String, dynamic>;
+    return _userFromJson(r['data'] as Map<String, dynamic>);
+  }
+
+  AppUser _userFromJson(Map<String, dynamic> json) {
+    final profile = (json['profile'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    return AppUser(
+      id: json['id'] as int,
+      name: json['name'] as String,
+      lastname: json['lastname'] as String?,
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      emailVerified: json['email_verified'] == true,
+      sellerVerified: json['seller_verified'] == true,
+      canReviewDocuments: json['can_review_documents'] == true,
+      intent: UserIntent.both,
+      canModerate: json['can_moderate'] == true,
+      twoFactorEnabled: json['two_factor_enabled'] == true,
+      twoFactorRequired: json['two_factor_required'] == true,
+      canManageRules: json['can_manage_rules'] == true,
+      bio: profile['bio'] as String?,
+      state: profile['state'] as String?,
+      municipality: profile['municipality'] as String?,
+      avatarUrl: profile['avatar_url'] as String?,
+    );
   }
 }

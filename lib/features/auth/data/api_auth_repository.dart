@@ -50,12 +50,13 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<AppUser> register(String name, String email, String password, UserIntent intent) async {
+  Future<AppUser> register(String name, String email, String password, UserIntent intent, {String? lastname}) async {
     final json = await _client.post(
       '/register',
       withAuth: false,
       body: {
         'name': name,
+        if (lastname != null && lastname.trim().isNotEmpty) 'lastname': lastname.trim(),
         'email': email,
         'password': password,
         'password_confirmation': password,
@@ -99,9 +100,11 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   AppUser _userFromJson(Map<String, dynamic> json, {UserIntent intent = UserIntent.both}) {
+    final profile = (json['profile'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
     return AppUser(
       id: json['id'] as int,
       name: json['name'] as String,
+      lastname: json['lastname'] as String?,
       email: json['email'] as String,
       phone: json['phone'] as String?,
       emailVerified: json['email_verified'] == true,
@@ -112,6 +115,10 @@ class ApiAuthRepository implements AuthRepository {
       twoFactorEnabled: json['two_factor_enabled'] == true,
       twoFactorRequired: json['two_factor_required'] == true,
       canManageRules: json['can_manage_rules'] == true,
+      bio: profile['bio'] as String?,
+      state: profile['state'] as String?,
+      municipality: profile['municipality'] as String?,
+      avatarUrl: profile['avatar_url'] as String?,
     );
   }
 }

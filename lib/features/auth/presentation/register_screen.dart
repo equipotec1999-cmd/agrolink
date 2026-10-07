@@ -20,6 +20,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
+  final _lastname = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   UserIntent _intent = UserIntent.both;
@@ -29,6 +30,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _lastname.dispose();
     _email.dispose();
     _password.dispose();
     super.dispose();
@@ -44,7 +46,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     try {
       await ref
           .read(authProvider.notifier)
-          .register(_name.text.trim(), _email.text.trim(), _password.text, _intent);
+          .register(
+            _name.text.trim(),
+            _email.text.trim(),
+            _password.text,
+            _intent,
+            lastname: _lastname.text.trim().isEmpty ? null : _lastname.text.trim(),
+          );
       if (!mounted) return;
       context.go('/home');
     } on ApiException catch (e) {
@@ -97,13 +105,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 22),
-                AgroTextField(
-                  label: 'Nombre o razón social',
-                  icon: Icons.person_outline_rounded,
-                  hint: 'Rancho, apiario o tu nombre',
-                  controller: _name,
-                  validator: Validators.notEmpty,
-                ),
+                Row(children: [
+                  Expanded(
+                    child: AgroTextField(
+                      label: 'Nombre',
+                      icon: Icons.person_outline_rounded,
+                      hint: 'Tu nombre',
+                      controller: _name,
+                      validator: Validators.notEmpty,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AgroTextField(
+                      label: 'Apellidos',
+                      hint: 'Opcional',
+                      controller: _lastname,
+                    ),
+                  ),
+                ]),
                 const SizedBox(height: 16),
                 AgroTextField(
                   label: 'Correo electrónico',
