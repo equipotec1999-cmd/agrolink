@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text.dart';
 import '../../features/chat/application/chat_controller.dart';
+import '../../features/my_listings/data/my_listings_repository.dart';
+import '../../features/settings/data/account_repository.dart';
 import 'motion.dart';
 
 /// Contenedor con barra de navegación flotante y botón central "Publicar".
@@ -52,7 +54,14 @@ class _AgroNavBar extends ConsumerWidget {
       return Expanded(
         child: Pressable(
           scale: 0.9,
-          onTap: () => onSelect(i),
+          onTap: () {
+            // Al entrar a Perfil se vuelven a pedir sus cifras y sus publicaciones (pudieron cambiar).
+            if (i == 3) {
+              ref.invalidate(profileStatsProvider);
+              ref.invalidate(myListingsProvider);
+            }
+            onSelect(i);
+          },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

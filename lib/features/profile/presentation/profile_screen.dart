@@ -8,6 +8,7 @@ import '../../../shared/widgets/agro_widgets.dart';
 import '../../../shared/widgets/motion.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../my_listings/data/my_listings_repository.dart';
+import '../../settings/data/account_repository.dart';
 import '../../my_listings/presentation/my_listings_section.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -48,24 +49,26 @@ class ProfileScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(user?.email ?? 'demo@agrolink.mx', style: AppText.muted.copyWith(color: Colors.white54)),
                               const SizedBox(height: 8),
-                              const StatusPill(label: 'Correo sin verificar', color: AppColors.honey, icon: Icons.mail_outline_rounded),
+                              if (!(user?.emailVerified ?? true))
+                                const StatusPill(label: 'Correo sin verificar', color: AppColors.honey, icon: Icons.mail_outline_rounded),
                             ],
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        _Stat(
-                          value: ref.watch(myListingsProvider).maybeWhen(data: (l) => '${l.length}', orElse: () => '–'),
-                          label: 'Publicaciones',
-                        ),
-                        const _Stat(value: '12', label: 'Ventas'),
-                        const _Stat(value: '4', label: 'Compras'),
-                        const _Stat(value: '4.8', label: 'Reputación'),
-                      ],
-                    ),
+                    Builder(builder: (context) {
+                      final stats = ref.watch(profileStatsProvider).asData?.value;
+                      String n(int? v) => v == null ? '–' : '$v';
+                      return Row(
+                        children: [
+                          _Stat(value: n(stats?.listings), label: 'Publicaciones'),
+                          _Stat(value: n(stats?.sales), label: 'Ventas'),
+                          _Stat(value: n(stats?.purchases), label: 'Compras'),
+                          _Stat(value: stats?.rating == null ? '–' : stats!.rating!.toStringAsFixed(1), label: 'Reputación'),
+                        ],
+                      );
+                    }),
                   ],
                 ),
               ),
