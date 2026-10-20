@@ -85,45 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _recover() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.cream,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(21))),
-      builder: (sheetContext) => Padding(
-        padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(sheetContext).viewInsets.bottom + 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(9)),
-              ),
-            ),
-            const SizedBox(height: 22),
-            const Text('Recuperar contraseña', style: AppText.h2),
-            const SizedBox(height: 6),
-            const Text('Te enviaremos un enlace seguro que vence en 60 minutos.', style: AppText.muted),
-            const SizedBox(height: 20),
-            const AgroTextField(label: 'Correo electrónico', icon: Icons.alternate_email_rounded, hint: 'tu@correo.com'),
-            const SizedBox(height: 20),
-            AgroButton(
-              label: 'Enviar enlace',
-              icon: Icons.send_rounded,
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                showAgroSnack(context, 'Si el correo existe, recibirás un enlace', emoji: '📬');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  void _recover() => context.push('/forgot-password');
 
   @override
   Widget build(BuildContext context) {

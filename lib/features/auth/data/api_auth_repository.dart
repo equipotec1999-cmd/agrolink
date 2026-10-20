@@ -95,6 +95,16 @@ class ApiAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> forgotPassword(String email) async {
+    await _client.post('/forgot-password', withAuth: false, body: {'email': email});
+  }
+
+  @override
+  Future<void> resetPassword(String email, String code, String password) async {
+    await _client.post('/reset-password', withAuth: false, body: {'email': email, 'code': code, 'password': password});
+  }
+
+  @override
   Future<void> logout() async {
     try {
       await _client.post('/logout');

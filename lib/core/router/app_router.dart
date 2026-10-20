@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/admin/presentation/compliance_rules_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/verify_contact_screen.dart';
 import '../../features/auth/presentation/splash_screen.dart';
@@ -71,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => TwoFactorChallengeScreen(challengeToken: state.extra! as String),
       ),
       GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+      GoRoute(path: '/forgot-password', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(
         path: '/verify-contact',
         builder: (context, state) {

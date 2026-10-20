@@ -34,6 +34,12 @@ abstract interface class AuthRepository {
   Future<AppUser> verifyContact({required String destination, required String code});
 
   Future<void> resendVerification(String destination);
+
+  /// Pide un código de 6 dígitos para resetear la contraseña (siempre responde 200).
+  Future<void> forgotPassword(String email);
+
+  /// Cambia la contraseña con el código recibido por correo.
+  Future<void> resetPassword(String email, String code, String password);
   Future<void> logout();
 
   /// Si hay un token guardado y sigue siendo válido (GET /api/me responde bien), regresa
