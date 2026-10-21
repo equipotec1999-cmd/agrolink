@@ -19,7 +19,7 @@ abstract final class AppText {
     fontWeight: FontWeight.w700,
     height: 1.15,
     letterSpacing: 0.6,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const h1 = TextStyle(
     fontFamily: display,
@@ -27,7 +27,7 @@ abstract final class AppText {
     fontWeight: FontWeight.w700,
     height: 1.15,
     letterSpacing: 0.8,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const h2 = TextStyle(
     fontFamily: display,
@@ -35,7 +35,7 @@ abstract final class AppText {
     fontWeight: FontWeight.w700,
     height: 1.2,
     letterSpacing: 0.6,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const h3 = TextStyle(
     fontFamily: display,
@@ -43,7 +43,7 @@ abstract final class AppText {
     fontWeight: FontWeight.w700,
     height: 1.2,
     letterSpacing: 0.6,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   // Precio en sans: los números en Cinzel son bonitos pero más lentos de leer.
   static const price = TextStyle(
@@ -51,26 +51,26 @@ abstract final class AppText {
     fontSize: 19,
     fontWeight: FontWeight.w800,
     letterSpacing: -0.3,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const title = TextStyle(
     fontFamily: body,
     fontSize: 15,
     fontWeight: FontWeight.w700,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const bodyStrong = TextStyle(
     fontFamily: body,
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const bodyText = TextStyle(
     fontFamily: body,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.45,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   static const muted = TextStyle(
     fontFamily: body,
@@ -83,7 +83,7 @@ abstract final class AppText {
     fontSize: 12,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.2,
-    color: AppColors.ink,
+    color: AppColors.text,
   );
   // Rótulo chico tipo "— ANIMALES —" de los emblemas.
   static const overline = TextStyle(

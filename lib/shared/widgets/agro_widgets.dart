@@ -36,7 +36,7 @@ class AgroButton extends StatelessWidget {
     final (bg, fg) = switch (tone) {
       ButtonTone.dark => (AppColors.ink, AppColors.bone),
       ButtonTone.lime => (AppColors.lime, AppColors.ink),
-      ButtonTone.light => (AppColors.surface, AppColors.ink),
+      ButtonTone.light => (AppColors.surface, AppColors.text),
     };
     return Pressable(
       onTap: loading ? null : onTap,
@@ -203,13 +203,13 @@ class AgroChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (emoji != null) ...[
-              CategoryGlyph(value: emoji!, size: 15, color: selected ? AppColors.lime : AppColors.ink),
+              CategoryGlyph(value: emoji!, size: 15, color: selected ? AppColors.lime : AppColors.text),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: AppText.label.copyWith(
-                color: selected ? AppColors.lime : AppColors.ink,
+                color: selected ? AppColors.lime : AppColors.text,
                 fontSize: dense ? 12 : 13,
               ),
             ),
@@ -254,7 +254,7 @@ class CircleIconButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.background = AppColors.surface,
-    this.color = AppColors.ink,
+    this.color = AppColors.text,
     this.size = 46,
     this.badge = false,
   });

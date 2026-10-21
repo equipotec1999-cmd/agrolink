@@ -28,7 +28,7 @@ Widget _tinted(String asset, {double? height, double? width, required Color colo
 
 /// Isotipo (solo el emblema). `size` es la ALTURA; el ancho sale de la proporción.
 class AgroLinkMark extends StatelessWidget {
-  const AgroLinkMark({super.key, this.size = 48, this.color = AppColors.ink});
+  const AgroLinkMark({super.key, this.size = 48, this.color = AppColors.bone});
 
   final double size;
   final Color color;
@@ -39,7 +39,7 @@ class AgroLinkMark extends StatelessWidget {
 
 /// Logotipo (letras "AGROLINK" grabadas). `size` es la ALTURA de las letras.
 class AgroLinkWordmark extends StatelessWidget {
-  const AgroLinkWordmark({super.key, this.size = 26, this.color = AppColors.ink});
+  const AgroLinkWordmark({super.key, this.size = 26, this.color = AppColors.bone});
 
   final double size;
   final Color color;

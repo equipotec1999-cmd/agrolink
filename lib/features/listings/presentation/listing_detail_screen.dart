@@ -317,7 +317,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(children: const [
-                                  Icon(Icons.shield_outlined, size: 18, color: AppColors.ink),
+                                  Icon(Icons.shield_outlined, size: 18, color: AppColors.text),
                                   SizedBox(width: 6),
                                   Text('Acciones de moderación', style: AppText.title),
                                 ]),

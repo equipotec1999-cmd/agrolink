@@ -125,7 +125,7 @@ class ComplianceRulesScreen extends ConsumerWidget {
                                   Text('Aplica a: ${scope(r)}', style: AppText.muted),
                                   if (r.description != null && r.description!.isNotEmpty) ...[
                                     const SizedBox(height: 6),
-                                    Text(r.description!, style: AppText.muted.copyWith(color: AppColors.ink)),
+                                    Text(r.description!, style: AppText.muted.copyWith(color: AppColors.text)),
                                   ],
                                   const SizedBox(height: 6),
                                   Text('Fuente: ${r.sourceName}', style: AppText.label),

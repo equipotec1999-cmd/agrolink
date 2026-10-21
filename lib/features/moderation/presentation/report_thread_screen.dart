@@ -92,7 +92,7 @@ class _MessageBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(sender.name, style: AppText.label.copyWith(color: AppColors.ink, fontSize: 12)),
+          Text(sender.name, style: AppText.label.copyWith(color: AppColors.text, fontSize: 12)),
           const SizedBox(height: 4),
           if (isOffer)
             Text('🏷️ Oferta: \$${message.offerAmount!.toStringAsFixed(2)} (${message.offerStatus ?? ''})', style: AppText.bodyStrong)

@@ -16,7 +16,7 @@ String priceLabel(Listing l) =>
     l.priceType == PriceType.quote ? 'Cotizar' : formatMoney(l.price);
 
 class PriceText extends StatelessWidget {
-  const PriceText(this.listing, {super.key, this.size = 20, this.color = AppColors.ink});
+  const PriceText(this.listing, {super.key, this.size = 20, this.color = AppColors.text});
 
   final Listing listing;
   final double size;
@@ -71,7 +71,7 @@ class FavoriteButton extends ConsumerWidget {
           child: Icon(
             fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             key: ValueKey(fav),
-            color: fav ? AppColors.clay : AppColors.ink,
+            color: fav ? AppColors.clay : AppColors.text,
             size: size * 0.5,
           ),
         ),

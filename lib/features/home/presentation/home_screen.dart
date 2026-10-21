@@ -278,7 +278,7 @@ class _SearchLauncher extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.search_rounded, color: AppColors.ink),
+            const Icon(Icons.search_rounded, color: AppColors.text),
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
@@ -409,7 +409,7 @@ class _FeaturedCarouselState extends State<_FeaturedCarousel> {
                 width: _page.round() == i ? 22 : 7,
                 height: 3,
                 decoration: BoxDecoration(
-                  color: _page.round() == i ? AppColors.ink : AppColors.line,
+                  color: _page.round() == i ? AppColors.text : AppColors.line,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

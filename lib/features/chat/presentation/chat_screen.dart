@@ -252,7 +252,7 @@ class _MessageItem extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.74),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: m.mine ? AppColors.forest : Colors.white,
+          color: m.mine ? AppColors.forest : AppColors.surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
             topRight: const Radius.circular(14),
@@ -262,7 +262,7 @@ class _MessageItem extends StatelessWidget {
         ),
         child: Text(
           m.text,
-          style: AppText.bodyText.copyWith(color: m.mine ? Colors.white : AppColors.ink),
+          style: AppText.bodyText.copyWith(color: m.mine ? Colors.white : AppColors.text),
         ),
       ),
     );
@@ -336,7 +336,7 @@ class _OfferBubbleState extends ConsumerState<_OfferBubble> {
       width: 260,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: dark ? AppColors.ink : Colors.white,
+        color: dark ? AppColors.ink : AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: dark ? AppColors.ink : AppColors.line, width: 1.4),
       ),
@@ -361,7 +361,7 @@ class _OfferBubbleState extends ConsumerState<_OfferBubble> {
             TextSpan(children: [
               TextSpan(
                 text: formatMoney(offer.amount),
-                style: AppText.price.copyWith(color: dark ? AppColors.bone : AppColors.ink, fontSize: 26),
+                style: AppText.price.copyWith(color: dark ? AppColors.bone : AppColors.text, fontSize: 26),
               ),
               TextSpan(
                 text: ' ${widget.conversation.priceSuffix}',

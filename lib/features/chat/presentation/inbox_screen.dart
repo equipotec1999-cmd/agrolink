@@ -128,7 +128,7 @@ class _ConversationTile extends StatelessWidget {
                           c.lastText == null ? 'Nueva conversación' : '${c.lastMine ? 'Tú: ' : ''}${c.lastText}',
                           style: AppText.muted.copyWith(
                             fontSize: 12.5,
-                            color: c.unread > 0 ? AppColors.ink : AppColors.muted,
+                            color: c.unread > 0 ? AppColors.text : AppColors.muted,
                             fontWeight: c.unread > 0 ? FontWeight.w700 : FontWeight.w500,
                           ),
                           maxLines: 1,

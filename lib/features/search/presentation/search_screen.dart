@@ -121,7 +121,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         decoration: InputDecoration(
                           hintText: 'Escribe como hablas: “borregos de 35 a 50 kg”',
                           hintStyle: AppText.muted.copyWith(fontSize: 12.5),
-                          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.ink),
+                          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.text),
                           suffixIcon: filters.query.isEmpty
                               ? null
                               : IconButton(
@@ -129,7 +129,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   onPressed: () => _setQuery(''),
                                 ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: AppColors.surface,
                           contentPadding: const EdgeInsets.symmetric(vertical: 18),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),

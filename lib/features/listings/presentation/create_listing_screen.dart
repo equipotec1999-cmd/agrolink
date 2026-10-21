@@ -324,7 +324,7 @@ class _TypeStep extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Los tipos y sus campos vienen del catálogo del servidor: se pueden agregar nuevos sin actualizar la app.',
-                  style: TextStyle(fontFamily: AppText.body, fontSize: 12, color: AppColors.ink, height: 1.4),
+                  style: TextStyle(fontFamily: AppText.body, fontSize: 12, color: AppColors.text, height: 1.4),
                 ),
               ),
             ],
@@ -351,7 +351,7 @@ class _TypeCard extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: selected ? AppColors.ink : Colors.white,
+          color: selected ? AppColors.ink : AppColors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -363,7 +363,7 @@ class _TypeCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
                 type.name,
-                style: AppText.label.copyWith(color: selected ? AppColors.lime : AppColors.ink),
+                style: AppText.label.copyWith(color: selected ? AppColors.lime : AppColors.text),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -805,7 +805,7 @@ class _MediaStep extends ConsumerWidget {
                       Positioned(
                         left: 8,
                         bottom: 8,
-                        child: StatusPill(label: 'Portada', color: AppColors.ink),
+                        child: StatusPill(label: 'Portada', color: AppColors.lime),
                       ),
                     Positioned(
                       top: 6,

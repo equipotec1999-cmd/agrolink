@@ -170,7 +170,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: _terms ? AppColors.forest : Colors.white,
+                          color: _terms ? AppColors.forest : AppColors.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: _terms ? AppColors.forest : AppColors.line, width: 1.6),
                         ),
@@ -214,7 +214,7 @@ class _IntentCard extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: selected ? AppColors.ink : Colors.white,
+          color: selected ? AppColors.ink : AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: selected ? AppColors.ink : AppColors.line, width: 1.4),
         ),
@@ -227,7 +227,7 @@ class _IntentCard extends StatelessWidget {
               child: Text(emoji, style: const TextStyle(fontSize: 28)),
             ),
             const SizedBox(height: 8),
-            Text(label, style: AppText.label.copyWith(color: selected ? AppColors.lime : AppColors.ink)),
+            Text(label, style: AppText.label.copyWith(color: selected ? AppColors.lime : AppColors.text)),
           ],
         ),
       ),

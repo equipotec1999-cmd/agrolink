@@ -157,7 +157,7 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = danger ? AppColors.danger : AppColors.ink;
+    final color = danger ? AppColors.danger : AppColors.text;
     return Pressable(
       scale: 0.98,
       onTap: onTap ?? () {},
