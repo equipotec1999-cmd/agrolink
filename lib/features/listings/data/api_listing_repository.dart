@@ -117,7 +117,7 @@ class ApiListingRepository implements ListingRepository {
       // Si el vendedor ingresó en toneladas, el borrador lo convierte a kg
       // (el backend siempre guarda la cantidad en la unidad declarada).
       'quantity': draft.quantityForApi,
-      'unit': draft.unit.trim(),
+      'unit': draft.effectiveUnit,
       'sale_mode': draft.isLot ? 'lot' : 'individual',
       'negotiable': draft.negotiable,
       'attributes': draft.attributes,

@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../my_listings/data/my_listings_repository.dart';
 import '../../../core/location/device_location.dart';
+import '../../../core/location/reverse_geocode.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/theme/app_colors.dart';
@@ -870,21 +871,38 @@ class _LocationStep extends ConsumerStatefulWidget {
 class _LocationStepState extends ConsumerState<_LocationStep> {
   static const _states = ['Yucatán', 'Campeche', 'Quintana Roo', 'Tabasco', 'Chiapas', 'Veracruz', 'Jalisco', 'Sonora'];
   bool _locating = false;
+  // Cambia al autocompletar para reconstruir los campos (initialValue solo se lee al crearlos).
+  int _fill = 0;
 
   Future<void> _useCurrentLocation() async {
     setState(() => _locating = true);
     final position = await DeviceLocation.current();
     if (!mounted) return;
-    setState(() => _locating = false);
     if (position == null) {
+      setState(() => _locating = false);
       showAgroSnack(context, 'No se pudo obtener tu ubicación. Revisa permisos y GPS.', emoji: '📍');
       return;
     }
-    ref.read(listingDraftProvider.notifier).edit(
-          (d) => d.copyWith(lat: position.latitude, lng: position.longitude),
-        );
+    final ctrl = ref.read(listingDraftProvider.notifier);
+    ctrl.edit((d) => d.copyWith(lat: position.latitude, lng: position.longitude));
+
+    // Autocompleta estado, municipio y código postal a partir del GPS.
+    final place = await reverseGeocode(position.latitude, position.longitude);
     if (!mounted) return;
-    showAgroSnack(context, 'Ubicación capturada', emoji: '📍');
+    setState(() => _locating = false);
+    if (place != null) {
+      ctrl.edit((d) => d.copyWith(
+            state: place.state != null && _states.contains(place.state) ? place.state : null,
+            municipality: place.municipality,
+            postalCode: place.postalCode,
+          ));
+      setState(() => _fill++);
+    }
+    showAgroSnack(
+      context,
+      place?.municipality != null ? 'Ubicación capturada: ${place!.municipality}' : 'Ubicación capturada. Escribe tu municipio y CP.',
+      emoji: '📍',
+    );
   }
 
   @override
@@ -912,6 +930,7 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
         ),
         const SizedBox(height: 18),
         AgroTextField(
+          key: ValueKey('mun$_fill'),
           label: 'Municipio',
           icon: Icons.location_city_rounded,
           hint: 'Ej. Tizimín',
@@ -920,6 +939,7 @@ class _LocationStepState extends ConsumerState<_LocationStep> {
         ),
         const SizedBox(height: 16),
         AgroTextField(
+          key: ValueKey('cp$_fill'),
           label: 'Código postal',
           icon: Icons.markunread_mailbox_outlined,
           hint: '97700',

@@ -56,6 +56,21 @@ class ListingDraft {
 
   bool get hasLocation => lat != null && lng != null;
 
+  /// Unidad que se manda al backend: la escrita o, si el tipo de precio ya la fija
+  /// (por animal / kg / lote), la implícita. Antes, si el vendedor nunca tocaba el chip del
+  /// tipo de precio (venía preseleccionado), la unidad quedaba vacía y el campo no aparecía:
+  /// "Información básica" se quedaba en 5/6 y la publicación en 92 %.
+  String get effectiveUnit {
+    final u = unit.trim();
+    if (u.isNotEmpty) return u;
+    return switch (priceType) {
+      PriceType.perAnimal => 'animal',
+      PriceType.perKg => 'kg',
+      PriceType.perLot => 'lote',
+      _ => '',
+    };
+  }
+
   /// Cantidad final que se envía al backend (siempre en kg cuando el precio es por kg).
   double get quantityForApi {
     final n = double.tryParse(quantity) ?? 0;
@@ -161,7 +176,7 @@ Completeness evaluateDraft(ListingDraft d, ProductType? type) {
     double.tryParse(d.price) != null || d.priceType == PriceType.quote,
     d.priceType != null,
     double.tryParse(d.quantity) != null,
-    d.unit.trim().isNotEmpty,
+    d.effectiveUnit.isNotEmpty,
   ];
   final requiredAttrs = type?.requiredAttributes ?? const <AttributeDef>[];
   final filled = requiredAttrs.where((a) => (d.attributes[a.key] ?? '').trim().isNotEmpty).length;
