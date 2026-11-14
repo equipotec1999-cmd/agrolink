@@ -69,6 +69,13 @@ class _MyListingCard extends ConsumerWidget {
     }
   }
 
+  /// Abre la publicación como la verán los compradores (si aún no es pública, como vista previa)
+  /// y al volver refresca la lista, por si se reenvió o se envió a revisión desde allí.
+  Future<void> _openPreview(BuildContext context, WidgetRef ref) async {
+    await context.push('/listing/${item.id}');
+    ref.invalidate(myListingsProvider);
+  }
+
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -102,7 +109,7 @@ class _MyListingCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => context.push('/listing/${item.id}'),
+            onTap: () => _openPreview(context, ref),
             child: Row(
               children: [
                 SizedBox(
@@ -126,6 +133,8 @@ class _MyListingCard extends ConsumerWidget {
                 PopupMenuButton<String>(
                   onSelected: (v) async {
                     switch (v) {
+                      case 'preview':
+                        await _openPreview(context, ref);
                       case 'edit':
                         await context.push('/listing/${item.id}/edit', extra: item);
                         ref.invalidate(myListingsProvider);
@@ -136,6 +145,7 @@ class _MyListingCard extends ConsumerWidget {
                     }
                   },
                   itemBuilder: (_) => [
+                    PopupMenuItem(value: 'preview', child: Text(item.isPublic ? 'Ver publicación' : 'Vista previa')),
                     const PopupMenuItem(value: 'edit', child: Text('Editar')),
                     if (item.canArchive) const PopupMenuItem(value: 'archive', child: Text('Archivar')),
                     const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
@@ -157,6 +167,20 @@ class _MyListingCard extends ConsumerWidget {
                 'Motivo de moderación: ${item.moderationNote}',
                 style: AppText.label.copyWith(color: AppColors.danger, fontWeight: FontWeight.w500),
               ),
+            ),
+          ],
+          if (item.status == 'en_revision') ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.hourglass_top_rounded, size: 16, color: AppColors.honey),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text('Un moderador la revisa. Te avisamos cuando se publique.',
+                      style: AppText.muted.copyWith(fontSize: 12)),
+                ),
+                TextButton(onPressed: () => _openPreview(context, ref), child: const Text('Vista previa')),
+              ],
             ),
           ],
           if (item.canResubmit) ...[

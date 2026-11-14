@@ -1000,6 +1000,8 @@ class _ReviewStep extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       children: [
+        const _DraftPreviewCard(),
+        const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.line, width: 1.2)),
@@ -1076,9 +1078,93 @@ class _ReviewStep extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: 12),
-        if (draft.title.isNotEmpty)
-          Text('“${draft.title}”', style: AppText.h3.copyWith(color: AppColors.forest)),
+        Text(
+          'Antes de publicarse, un moderador la revisa. Podrás ver su estado y la vista previa en Mis publicaciones.',
+          style: AppText.muted.copyWith(fontSize: 12),
+        ),
       ],
+    );
+  }
+}
+
+/// Cómo se verá la publicación con lo capturado hasta ahora (foto, precio, título, lugar).
+class _DraftPreviewCard extends ConsumerWidget {
+  const _DraftPreviewCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final draft = ref.watch(listingDraftProvider);
+    final catalog = ref.watch(catalogProvider);
+    final type = draft.productTypeId == null ? null : catalog.type(draft.productTypeId!);
+
+    final amount = double.tryParse(draft.price.replaceAll(',', '.'));
+    final price = draft.priceType == PriceType.quote ? 'Cotizar' : (amount == null ? 'Sin precio' : formatMoney(amount));
+    final suffix = draft.priceType?.suffix ?? '';
+    final where = [draft.municipality.trim(), draft.state.trim()].where((e) => e.isNotEmpty).join(', ');
+    final qty = draft.quantity.trim().isEmpty ? null : '${draft.quantity.trim()} ${draft.effectiveUnit}'.trim();
+
+    final art = ProductArt(emoji: type?.emoji ?? '📦', colorKey: draft.categoryId ?? '', radius: 0, emojiSize: 72);
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.line, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 190,
+            width: double.infinity,
+            child: draft.photos.isEmpty
+                ? art
+                : Image.file(
+                    File(draft.photos.first),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => art,
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: price, style: AppText.price.copyWith(fontSize: 26)),
+                    if (suffix.isNotEmpty)
+                      TextSpan(text: ' $suffix', style: AppText.muted.copyWith(fontSize: 15)),
+                  ]),
+                ),
+                const SizedBox(height: 6),
+                Text(draft.title.trim().isEmpty ? 'Sin título todavía' : draft.title.trim(), style: AppText.h3),
+                if (where.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    const Icon(Icons.place_rounded, size: 15, color: AppColors.forest),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(where, style: AppText.muted.copyWith(fontSize: 12.5))),
+                  ]),
+                ],
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    if (qty != null) StatusPill(label: qty, color: AppColors.forest, icon: Icons.scale_outlined),
+                    if (draft.negotiable) const StatusPill(label: 'Negociable', color: AppColors.forest, icon: Icons.handshake_outlined),
+                    if (draft.isLot) const StatusPill(label: 'Lote', color: AppColors.forest, icon: Icons.inventory_2_outlined),
+                    if (draft.photos.isNotEmpty)
+                      StatusPill(label: '${draft.photos.length} foto(s)', color: AppColors.forest, icon: Icons.photo_outlined),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

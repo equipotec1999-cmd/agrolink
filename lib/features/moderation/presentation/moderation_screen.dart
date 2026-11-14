@@ -94,13 +94,18 @@ class _QueueTab extends ConsumerWidget {
                 itemBuilder: (context, i) {
                   final it = items[i];
                   return _Card(
-                    onOpen: () => context.push('/listing/${it.id}'),
+                    // Vista previa completa; se puede aprobar o rechazar desde allí y la cola se refresca al volver.
+                    onOpen: () async {
+                      await context.push('/listing/${it.id}');
+                      ref.invalidate(moderationQueueProvider);
+                    },
                     leading: ProductArt(emoji: '📦', colorKey: '', imageUrl: it.coverUrl, radius: 14, emojiSize: 24),
                     title: it.title,
                     lines: [
                       '${formatMoney(it.price)} · ${it.seller}',
                       if (it.place.isNotEmpty) it.place,
                       if (it.openReports > 0) '🚩 ${it.openReports} reporte(s) abierto(s)',
+                      'Toca para ver la vista previa',
                     ],
                     actions: [
                       Expanded(

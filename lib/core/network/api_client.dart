@@ -23,9 +23,10 @@ class ApiClient {
   final TokenStorage tokenStorage;
   final http.Client _client;
 
-  // Sin límite, si el servidor no es alcanzable (otra red WiFi, firewall, IP
-  // equivocada) la petición se queda colgada minutos y la app parece congelada.
-  static const _timeout = Duration(seconds: 15);
+  // Sin límite, si el servidor no es alcanzable la petición se queda colgada minutos y la app
+  // parece congelada. 45 s porque la API en Render (plan gratis) se duerme y despertarla tarda
+  // ~50 s: con 15 s la primera apertura del día siempre fallaba.
+  static const _timeout = Duration(seconds: 45);
   static const _uploadTimeout = Duration(seconds: 90);
 
   /// Ejecuta la petición con tiempo límite y convierte los fallos de red en un
@@ -35,8 +36,8 @@ class ApiClient {
       return await request().timeout(timeout ?? _timeout);
     } on TimeoutException {
       throw ApiException(
-        'El servidor no respondió a tiempo ($baseUrl). Revisa que el backend esté '
-        'corriendo y que el celular esté en la misma red WiFi que la PC.',
+        'El servidor tardó demasiado en responder ($baseUrl). Si estaba dormido '
+        '(plan gratis) espera un minuto y reintenta; si sigue igual, revisa tu conexión.',
       );
     } on http.ClientException catch (e) {
       // package:http envuelve aquí los SocketException (sin red, conexión rechazada…).

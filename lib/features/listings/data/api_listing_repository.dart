@@ -18,11 +18,34 @@ class ApiListingRepository implements ListingRepository {
   final ApiClient _client;
   final Catalog _catalog;
 
-  @override
-  Future<List<Listing>> feed() async {
-    final response = await _client.get('/listings') as Map<String, dynamic>;
-    return _mapPage(response);
+  /// Tamaño de página y tope de páginas del listado público: hasta 120 publicaciones.
+  /// Antes solo se leía la primera página (20) y el resto nunca aparecía en la app.
+  static const _pageSize = 40;
+  static const _maxPages = 3;
+
+  /// Pide la primera página (así se sabe cuántas hay) y las demás EN PARALELO, no una tras otra.
+  Future<List<Listing>> _fetchListings({Map<String, dynamic> query = const {}}) async {
+    final base = {...query, 'per_page': _pageSize};
+    final first = await _client.get('/listings', query: {...base, 'page': 1}) as Map<String, dynamic>;
+    final lastPage = ((first['meta'] as Map<String, dynamic>?)?['last_page'] as num?)?.toInt() ?? 1;
+
+    final rest = <Map<String, dynamic>>[];
+    if (lastPage > 1) {
+      final pages = await Future.wait([
+        for (var p = 2; p <= lastPage && p <= _maxPages; p++) _client.get('/listings', query: {...base, 'page': p}),
+      ]);
+      rest.addAll(pages.cast<Map<String, dynamic>>());
+    }
+
+    final pos = await DeviceLocation.lastKnown();
+    return [
+      for (final page in [first, ...rest])
+        for (final raw in page['data'] as List<dynamic>) _fromJson(raw as Map<String, dynamic>, pos),
+    ];
   }
+
+  @override
+  Future<List<Listing>> feed() => _fetchListings();
 
   @override
   Future<Listing?> byId(String id) async {
@@ -65,8 +88,7 @@ class ApiListingRepository implements ListingRepository {
       query['category_id'] = _catalog.category(f.categoryId!).backendId;
     }
 
-    final response = await _client.get('/listings', query: query) as Map<String, dynamic>;
-    var results = await _mapPage(response);
+    var results = await _fetchListings(query: query);
 
     // El backend (Fase 4) todavía solo filtra por texto/tipo/categoría — el
     // resto de los filtros de la pantalla de búsqueda (atributos, rango,
@@ -187,8 +209,11 @@ class ApiListingRepository implements ListingRepository {
 
     final sellerJson = json['seller'] as Map<String, dynamic>;
     final documentsJson = json['documents'] as List<dynamic>? ?? const [];
+    final note = (json['moderation_note'] as String?)?.trim();
 
     return Listing(
+      status: listingStatusFromWire(json['status'] as String?),
+      moderationNote: note == null || note.isEmpty ? null : note,
       id: '${json['id']}',
       title: json['title'] as String,
       categoryId: category.id,

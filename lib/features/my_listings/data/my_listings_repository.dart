@@ -31,6 +31,9 @@ class MyListing {
   final String? moderationNote;
   final String? coverUrl;
 
+  /// Visible para los compradores. Cualquier otro estado se abre como vista previa.
+  bool get isPublic => status == 'publicada';
+
   bool get canResubmit => status == 'rechazada' || status == 'suspended';
   bool get canPublish => status == 'borrador';
   bool get canArchive => const {'publicada', 'en_revision', 'rechazada', 'suspended', 'vencida'}.contains(status);

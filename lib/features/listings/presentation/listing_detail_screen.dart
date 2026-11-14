@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,6 +16,7 @@ import '../../chat/application/chat_controller.dart';
 import '../../../shared/widgets/ask_text_dialog.dart';
 import '../../moderation/data/moderation_repository.dart';
 import '../../moderation/presentation/report_sheet.dart';
+import '../../my_listings/data/my_listings_repository.dart';
 import '../../chat/presentation/offer_sheet.dart';
 import '../application/listing_providers.dart';
 import '../domain/listing.dart';
@@ -119,16 +121,139 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     try {
       final repo = ref.read(moderationRepositoryProvider);
       suspend ? await repo.suspendListing(l.id, reason) : await repo.deleteListing(l.id, reason);
+      ref.invalidate(moderationQueueProvider);
+      ref.invalidate(listingByIdProvider(l.id));
       if (!mounted) return;
       showAgroSnack(context, suspend ? 'Publicación suspendida' : 'Publicación eliminada', emoji: '🛡️');
-      if (suspend) {
-        context.pop();
-      } else {
-        context.pop();
-      }
+      context.pop();
     } on ApiException catch (e) {
       if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
     }
+  }
+
+  bool _busy = false;
+
+  /// Dueño: enviar a revisión un borrador, o reenviar una rechazada/suspendida ya corregida.
+  Future<void> _ownerAction({required bool resubmit}) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(myListingsRepositoryProvider);
+      resubmit ? await repo.resubmit(l.id) : await repo.publish(l.id);
+      ref.invalidate(myListingsProvider);
+      ref.invalidate(listingByIdProvider(l.id));
+      if (mounted) showAgroSnack(context, 'Enviada a revisión', emoji: '✅');
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Moderador: aprobar o rechazar desde la propia vista previa, sin volver a la cola.
+  Future<void> _review({required bool approve}) async {
+    if (_busy) return;
+    String? reason;
+    if (!approve) {
+      reason = await askText(context, title: 'Motivo del rechazo', hint: 'Se le muestra al vendedor');
+      if (reason == null || !mounted) return;
+    }
+    setState(() => _busy = true);
+    try {
+      final repo = ref.read(moderationRepositoryProvider);
+      approve ? await repo.approve(l.id) : await repo.reject(l.id, reason!);
+      ref.invalidate(moderationQueueProvider);
+      ref.invalidate(listingByIdProvider(l.id));
+      if (!mounted) return;
+      showAgroSnack(context, approve ? 'Publicación aprobada' : 'Publicación rechazada', emoji: '🛡️');
+      context.pop();
+    } on ApiException catch (e) {
+      if (mounted) showAgroSnack(context, e.message, emoji: '⚠️');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Contenido de la barra inferior según quién mira y en qué estado está la publicación.
+  /// null = sin barra: el dueño no se contacta a sí mismo y una vista previa no recibe ofertas.
+  Widget? _bottomBar({required bool isMe, required bool canModerate}) {
+    if (isMe) {
+      switch (l.status) {
+        case ListingStatus.rejected:
+        case ListingStatus.suspended:
+          return AgroButton(
+            label: 'Corregir y reenviar a revisión',
+            icon: Icons.send_rounded,
+            tone: ButtonTone.lime,
+            loading: _busy,
+            onTap: () => _ownerAction(resubmit: true),
+          );
+        case ListingStatus.draft:
+          return AgroButton(
+            label: 'Enviar a revisión',
+            icon: Icons.rocket_launch_outlined,
+            tone: ButtonTone.lime,
+            loading: _busy,
+            onTap: () => _ownerAction(resubmit: false),
+          );
+        default:
+          return null;
+      }
+    }
+    if (l.isPreview) {
+      if (canModerate && l.status == ListingStatus.pendingReview) {
+        return Row(
+          children: [
+            Expanded(
+              child: AgroButton(
+                label: 'Rechazar',
+                tone: ButtonTone.light,
+                loading: _busy,
+                onTap: () => _review(approve: false),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AgroButton(
+                label: 'Aprobar',
+                icon: Icons.check_rounded,
+                tone: ButtonTone.lime,
+                loading: _busy,
+                onTap: () => _review(approve: true),
+              ),
+            ),
+          ],
+        );
+      }
+      return null;
+    }
+    return Row(
+      children: [
+        Expanded(
+          child: AgroButton(
+            label: 'Contactar',
+            icon: Icons.chat_bubble_outline_rounded,
+            tone: ButtonTone.light,
+            onTap: _contact,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: AgroButton(
+            label: 'Hacer oferta',
+            icon: Icons.local_offer_rounded,
+            onTap: _offer,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Copia al portapapeles un resumen de la publicación (no hay enlaces públicos todavía).
+  Future<void> _copySummary() async {
+    final where = l.location.short.trim() == ',' ? '' : ' · ${l.location.short}';
+    await Clipboard.setData(ClipboardData(text: '${l.title}$where — AgroLink'));
+    if (mounted) showAgroSnack(context, 'Datos copiados', emoji: '📋');
   }
 
   @override
@@ -136,8 +261,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
     final catalog = ref.watch(catalogProvider);
     final type = catalog.type(l.productTypeId);
     final top = MediaQuery.of(context).padding.top;
-    final isMe = ref.watch(authProvider)?.id.toString() == l.seller.id;
-    final canModerate = (ref.watch(authProvider)?.canModerate ?? false) && !isMe;
+    final auth = ref.watch(authProvider);
+    final isMe = auth?.id.toString() == l.seller.id;
+    final canModerate = (auth?.canModerate ?? false) && !isMe;
+    final bar = _bottomBar(isMe: isMe, canModerate: canModerate);
 
     return Scaffold(
       body: Stack(
@@ -193,10 +320,14 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       color: AppColors.cream,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(21)),
                     ),
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 140),
+                    padding: EdgeInsets.fromLTRB(20, 24, 20, bar == null ? 40 : 140),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (l.isPreview) ...[
+                          _PreviewBanner(listing: l, isOwner: isMe),
+                          const SizedBox(height: 18),
+                        ],
                         // 2. Precio
                         FadeSlideIn(
                           child: Row(
@@ -224,7 +355,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  '${l.location.short} · a ${l.location.distanceKm.toStringAsFixed(0)} km',
+                                  // Sin permiso/posición del GPS la distancia es -1: no se imprime "a -1 km".
+                                  l.location.hasKnownDistance
+                                      ? '${l.location.short} · a ${l.location.distanceKm.toStringAsFixed(0)} km'
+                                      : l.location.short,
                                   style: AppText.bodyStrong.copyWith(fontSize: 13),
                                 ),
                               ),
@@ -362,54 +496,128 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               children: [
                 CircleIconButton(icon: Icons.arrow_back_rounded, onTap: () => context.pop()),
                 const Spacer(),
-                CircleIconButton(
-                  icon: Icons.ios_share_rounded,
-                  onTap: () => showAgroSnack(context, 'Enlace copiado: agrolink.mx/p/${l.id}', emoji: '🔗'),
-                ),
-                const SizedBox(width: 10),
-                FavoriteButton(listingId: l.id, size: 46),
+                CircleIconButton(icon: Icons.ios_share_rounded, onTap: _copySummary),
+                // Una publicación que aún no es pública no se puede guardar en favoritos.
+                if (!l.isPreview) ...[
+                  const SizedBox(width: 10),
+                  FavoriteButton(listingId: l.id, size: 46),
+                ],
               ],
             ),
           ),
-          // 9 y 10. Contactar / Hacer oferta
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                boxShadow: [
-                  BoxShadow(color: AppColors.ink.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -2)),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: AgroButton(
-                          label: 'Contactar',
-                          icon: Icons.chat_bubble_outline_rounded,
-                          tone: ButtonTone.light,
-                          onTap: _contact,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AgroButton(
-                          label: 'Hacer oferta',
-                          icon: Icons.local_offer_rounded,
-                          onTap: _offer,
-                        ),
-                      ),
-                    ],
+          // 9 y 10. Contactar / Hacer oferta (o las acciones de dueño / moderador en vista previa)
+          if (bar != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.ink.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, -2)),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                    child: bar,
                   ),
                 ),
               ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Aviso de "vista previa": la publicación todavía no es pública. Lo ven su dueño y los moderadores.
+class _PreviewBanner extends StatelessWidget {
+  const _PreviewBanner({required this.listing, required this.isOwner});
+
+  final Listing listing;
+  final bool isOwner;
+
+  (String, String, Color, IconData) get _info => switch (listing.status) {
+        ListingStatus.pendingReview => (
+            'Vista previa · En revisión',
+            isOwner
+                ? 'Así la verán los compradores en cuanto un moderador la apruebe.'
+                : 'Todavía no es pública. Revísala y decide si se aprueba.',
+            AppColors.honey,
+            Icons.hourglass_top_rounded,
+          ),
+        ListingStatus.draft => (
+            'Vista previa · Borrador',
+            'Nadie la ve todavía. Envíala a revisión para publicarla.',
+            AppColors.honey,
+            Icons.edit_note_rounded,
+          ),
+        ListingStatus.rejected => (
+            'Rechazada',
+            'Corrige lo que indica el moderador y reenvíala para que se revise otra vez.',
+            AppColors.danger,
+            Icons.block_rounded,
+          ),
+        ListingStatus.suspended => (
+            'Suspendida',
+            'No se muestra a los compradores. Corrígela y reenvíala para que se revise otra vez.',
+            AppColors.danger,
+            Icons.pause_circle_outline_rounded,
+          ),
+        ListingStatus.archived => (
+            'Archivada',
+            'Ya no se muestra a los compradores.',
+            AppColors.muted,
+            Icons.inventory_2_outlined,
+          ),
+        ListingStatus.expired => (
+            'Vencida',
+            'Pasó su vigencia y ya no se muestra a los compradores.',
+            AppColors.muted,
+            Icons.event_busy_rounded,
+          ),
+        ListingStatus.sold => (
+            'Vendida',
+            'Ya no se muestra a los compradores.',
+            AppColors.muted,
+            Icons.sell_outlined,
+          ),
+        ListingStatus.published => ('', '', AppColors.muted, Icons.info_outline_rounded),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final (title, message, color, icon) = _info;
+    final note = listing.moderationNote;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color, width: 1.2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppText.title),
+                const SizedBox(height: 2),
+                Text(message, style: AppText.muted.copyWith(fontSize: 12.5)),
+                if (isOwner && note != null) ...[
+                  const SizedBox(height: 8),
+                  Text('Motivo: $note', style: AppText.label.copyWith(color: AppColors.danger, fontWeight: FontWeight.w500)),
+                ],
+              ],
             ),
           ),
         ],

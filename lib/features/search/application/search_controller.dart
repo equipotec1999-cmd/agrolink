@@ -26,9 +26,20 @@ final searchFiltersProvider = NotifierProvider<SearchFiltersController, SearchFi
   SearchFiltersController.new,
 );
 
-final searchResultsProvider = FutureProvider<List<Listing>>((ref) {
+final searchResultsProvider = FutureProvider<List<Listing>>((ref) async {
   final filters = ref.watch(searchFiltersProvider);
-  return ref.watch(listingRepositoryProvider).search(filters);
+  final repo = ref.watch(listingRepositoryProvider);
+
+  // Debounce: mientras se escribe, cada letra reconstruye este provider; esperar un momento
+  // evita una petición HTTP por tecla (la anterior queda descartada). Los chips y filtros
+  // (sin texto) responden al instante.
+  if (filters.query.trim().isNotEmpty) {
+    var cancelled = false;
+    ref.onDispose(() => cancelled = true);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (cancelled) return const <Listing>[];
+  }
+  return repo.search(filters);
 });
 
 final parsedQueryProvider = Provider<ParsedQuery>(

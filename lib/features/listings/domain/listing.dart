@@ -20,6 +20,19 @@ extension ListingStatusX on ListingStatus {
       };
 }
 
+/// Estatus que manda la API (en español) -> enum. Un valor desconocido se trata como
+/// publicado: las rutas públicas solo devuelven publicaciones visibles.
+ListingStatus listingStatusFromWire(String? wire) => switch (wire) {
+      'borrador' => ListingStatus.draft,
+      'en_revision' => ListingStatus.pendingReview,
+      'rechazada' => ListingStatus.rejected,
+      'suspended' => ListingStatus.suspended,
+      'sold' => ListingStatus.sold,
+      'vencida' => ListingStatus.expired,
+      'archivada' => ListingStatus.archived,
+      _ => ListingStatus.published,
+    };
+
 class ListingAttributeValue {
   const ListingAttributeValue(this.key, this.value, [this.verification = VerificationLevel.declared]);
   final String key;
@@ -107,6 +120,7 @@ class Listing {
     this.wholesale = false,
     this.featured = false,
     this.status = ListingStatus.published,
+    this.moderationNote,
     this.emojiFallback,
   });
 
@@ -133,6 +147,13 @@ class Listing {
   final bool wholesale;
   final bool featured; // preparado para "publicaciones destacadas" (monetización)
   final ListingStatus status;
+
+  /// Motivo de rechazo/suspensión. La API solo lo manda al dueño de la publicación.
+  final String? moderationNote;
+
+  /// Toda publicación que no está visible al público se abre como "vista previa"
+  /// (solo la ven su dueño y los moderadores).
+  bool get isPreview => status != ListingStatus.published;
 
   /// Emoji del tipo de producto, para usar como arte de respaldo cuando `gallery`
   /// trae URLs reales (API) en vez de emojis (mock). Si no se da, se asume que
