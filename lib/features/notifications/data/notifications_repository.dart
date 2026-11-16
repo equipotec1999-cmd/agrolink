@@ -31,6 +31,7 @@ class ApiNotificationsRepository implements NotificationsRepository {
         body: json['body'] as String? ?? '',
         createdAt: DateTime.tryParse('${json['created_at']}')?.toLocal() ?? DateTime.now(),
         conversationId: data['conversation_id'] == null ? null : '${data['conversation_id']}',
+        operationId: data['operation_id'] == null ? null : '${data['operation_id']}',
         read: json['read_at'] != null,
       );
     }).toList();

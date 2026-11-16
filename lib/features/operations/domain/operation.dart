@@ -1,7 +1,7 @@
 enum OperationRole { buyer, seller }
 
-/// Estados de la operación (los mismos que el backend; hoy solo se llega a
-/// "oferta aceptada": pago y entrega vienen en fases posteriores).
+/// Estados de la operación (los mismos que el backend). El pago es manual:
+/// el comprador avisa que pagó y el vendedor lo confirma.
 enum OperationStatus {
   offerAccepted,
   pendingPayment,
@@ -13,6 +13,20 @@ enum OperationStatus {
   completed,
   cancelled,
   dispute;
+
+  /// Valor que entiende el API.
+  String get wire => switch (this) {
+        offerAccepted => 'oferta_aceptada',
+        pendingPayment => 'pendiente_pago',
+        paid => 'pagado',
+        preparingDelivery => 'preparando_entrega',
+        inTransit => 'en_transito',
+        delivered => 'entregado',
+        confirmed => 'confirmado',
+        completed => 'completado',
+        cancelled => 'cancelado',
+        dispute => 'disputa',
+      };
 
   static OperationStatus fromWire(String v) => switch (v) {
         'pendiente_pago' => pendingPayment,
@@ -41,6 +55,14 @@ enum OperationStatus {
       };
 }
 
+/// Paso de la línea de tiempo de una operación.
+class OperationEvent {
+  const OperationEvent({required this.status, required this.at, this.note});
+  final OperationStatus status;
+  final DateTime at;
+  final String? note;
+}
+
 class Operation {
   const Operation({
     required this.id,
@@ -56,6 +78,11 @@ class Operation {
     required this.counterpart,
     required this.createdAt,
     this.coverUrl,
+    this.actions = const [],
+    this.canReview = false,
+    this.reviewed = false,
+    this.counterpartId = '',
+    this.events = const [],
   });
 
   final String id;
@@ -71,4 +98,11 @@ class Operation {
   final String counterpart;
   final String? coverUrl;
   final DateTime createdAt;
+
+  /// Estados a los que yo puedo pasarla ahora (los calcula el servidor).
+  final List<OperationStatus> actions;
+  final bool canReview;
+  final bool reviewed;
+  final String counterpartId;
+  final List<OperationEvent> events;
 }

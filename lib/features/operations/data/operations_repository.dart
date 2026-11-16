@@ -5,6 +5,11 @@ import '../domain/operation.dart';
 
 abstract interface class OperationsRepository {
   Future<List<Operation>> mine(OperationRole role);
+  Future<Operation> detail(String id);
+  Future<Operation> transition(String id, OperationStatus to);
+
+  /// [scores] usa las claves del API (accuracy, fulfillment, communication, payment, reception).
+  Future<void> review(String id, Map<String, int> scores, String? comment);
 }
 
 final operationsRepositoryProvider = Provider<OperationsRepository>(
@@ -25,6 +30,26 @@ class ApiOperationsRepository implements OperationsRepository {
     return (response['data'] as List<dynamic>).map((raw) => _fromJson(raw as Map<String, dynamic>)).toList();
   }
 
+  @override
+  Future<Operation> detail(String id) async {
+    final response = await _client.get('/operations/$id') as Map<String, dynamic>;
+    return _fromJson(response['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Operation> transition(String id, OperationStatus to) async {
+    final response = await _client.post('/operations/$id/transition', body: {'status': to.wire}) as Map<String, dynamic>;
+    return _fromJson(response['data'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> review(String id, Map<String, int> scores, String? comment) async {
+    await _client.post('/operations/$id/review', body: {
+      ...scores,
+      if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+    });
+  }
+
   Operation _fromJson(Map<String, dynamic> json) {
     final listing = json['listing'] as Map<String, dynamic>;
     final other = json['other_user'] as Map<String, dynamic>;
@@ -42,6 +67,18 @@ class ApiOperationsRepository implements OperationsRepository {
       coverUrl: listing['cover_url'] as String?,
       counterpart: other['name'] as String? ?? '',
       createdAt: DateTime.tryParse('${json['created_at']}')?.toLocal() ?? DateTime.now(),
+      counterpartId: '${other['id']}',
+      actions: ((json['actions'] as List<dynamic>?) ?? const []).map((a) => OperationStatus.fromWire('$a')).toList(),
+      canReview: json['can_review'] == true,
+      reviewed: json['reviewed'] == true,
+      events: ((json['events'] as List<dynamic>?) ?? const []).map((raw) {
+        final e = raw as Map<String, dynamic>;
+        return OperationEvent(
+          status: OperationStatus.fromWire('${e['status']}'),
+          at: DateTime.tryParse('${e['created_at']}')?.toLocal() ?? DateTime.now(),
+          note: e['note'] as String?,
+        );
+      }).toList(),
     );
   }
 }
@@ -49,4 +86,8 @@ class ApiOperationsRepository implements OperationsRepository {
 /// Mis compras / mis ventas. autoDispose: se vuelve a pedir cada vez que se abre la pantalla.
 final operationsProvider = FutureProvider.autoDispose.family<List<Operation>, OperationRole>(
   (ref, role) => ref.watch(operationsRepositoryProvider).mine(role),
+);
+
+final operationDetailProvider = FutureProvider.autoDispose.family<Operation, String>(
+  (ref, id) => ref.watch(operationsRepositoryProvider).detail(id),
 );

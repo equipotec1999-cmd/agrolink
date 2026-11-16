@@ -39,7 +39,7 @@ class OperationsScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Text(
-                buying ? 'Ofertas tuyas que el vendedor aceptó.' : 'Ofertas que aceptaste como vendedor.',
+                buying ? 'Toca una compra para ver su seguimiento.' : 'Toca una venta para ver su seguimiento.',
                 style: AppText.muted,
               ),
             ),
@@ -92,8 +92,7 @@ class _OperationTile extends StatelessWidget {
     final who = o.role == OperationRole.buyer ? 'Vendedor' : 'Comprador';
     return Pressable(
       scale: 0.98,
-      // Por ahora el seguimiento de la operación se hace en la conversación.
-      onTap: () => context.push('/chat/${o.conversationId}'),
+      onTap: () => context.push('/operations/${o.id}'),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

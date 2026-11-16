@@ -104,6 +104,9 @@ class PushService {
   }
 
   String? _routeOf(RemoteMessage m) {
+    final operation = m.data['operation_id'];
+    final isOp = m.data['type'] == 'operation_updated' || m.data['type'] == 'review_received';
+    if (isOp && operation is String && operation.isNotEmpty) return '/operations/$operation';
     final conversation = m.data['conversation_id'];
     return (conversation is String && conversation.isNotEmpty) ? '/chat/$conversation' : null;
   }

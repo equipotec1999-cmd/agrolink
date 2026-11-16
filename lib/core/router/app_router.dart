@@ -20,6 +20,7 @@ import '../../features/my_listings/data/my_listings_repository.dart';
 import '../../features/my_listings/presentation/edit_listing_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/operations/domain/operation.dart';
+import '../../features/operations/presentation/operation_detail_screen.dart';
 import '../../features/operations/presentation/operations_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/edit_profile_screen.dart';
@@ -126,6 +127,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/moderation', builder: (context, state) => const ModerationScreen()),
       GoRoute(path: '/moderation/reports/:id/thread', builder: (context, state) => ReportThreadScreen(reportId: state.pathParameters['id']!)),
       GoRoute(path: '/purchases', builder: (context, state) => const OperationsScreen(role: OperationRole.buyer)),
+      GoRoute(path: '/operations/:id', builder: (context, state) => OperationDetailScreen(operationId: state.pathParameters['id']!)),
       GoRoute(path: '/sales', builder: (context, state) => const OperationsScreen(role: OperationRole.seller)),
       GoRoute(path: '/favorites', builder: (context, state) => const FavoritesScreen()),
       GoRoute(path: '/notifications', builder: (context, state) => const NotificationsScreen()),
