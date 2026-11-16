@@ -20,7 +20,6 @@ import '../../catalog/data/catalog_repository.dart';
 import '../../catalog/domain/catalog.dart';
 import '../application/listing_draft_controller.dart';
 import '../data/listing_repository.dart';
-import '../domain/listing_draft.dart';
 
 class CreateListingScreen extends ConsumerStatefulWidget {
   const CreateListingScreen({super.key});
@@ -994,7 +993,6 @@ class _ReviewStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = ref.watch(draftCompletenessProvider);
-    final draft = ref.watch(listingDraftProvider);
     final pct = (c.ratio * 100).round();
 
     return ListView(
